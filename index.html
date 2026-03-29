@@ -1,570 +1,450 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gold Intelligence</title>
-
-  <!-- React + Babel via CDN — no build step needed -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body, #root { height: 100%; }
-    body {
-      background: #07090D;
-      color: #D0DFF8;
-      font-family: 'IBM Plex Mono', 'Fira Code', monospace;
-      overflow-x: hidden;
-    }
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-track { background: #07090D; }
-    ::-webkit-scrollbar-thumb { background: #192030; border-radius: 2px; }
-
-    @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.25} }
-    @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes ticker   { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-    @keyframes spin     { to{transform:rotate(360deg)} }
-    @keyframes glow     { 0%,100%{box-shadow:0 0 6px #C8A02044} 50%{box-shadow:0 0 18px #C8A02099} }
-
-    .fade-up { animation: fadeUp .4s ease forwards; }
-
-    input[type=range] {
-      -webkit-appearance: none; width: 100%; height: 2px;
-      background: #192030; outline: none; cursor: pointer; border-radius: 2px;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
-      background: #C8A020; cursor: pointer; box-shadow: 0 0 8px #C8A02055;
-    }
-    select, .key-input {
-      background: #07090D; color: #D0DFF8;
-      border: 1px solid #192030; border-radius: 3px;
-      padding: 5px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-      outline: none; width: 100%; transition: border-color .2s;
-    }
-    select:focus, .key-input:focus { border-color: #C8A02066; }
-    .run-btn {
-      width: 100%; padding: 11px 0;
-      background: linear-gradient(135deg, #7A5C0A, #C8A020);
-      color: #07090D; border: none; border-radius: 4px;
-      font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
-      letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: all .2s;
-    }
-    .run-btn:hover:not(:disabled) { background: linear-gradient(135deg, #C8A020, #E6BB3A); box-shadow: 0 0 28px #C8A02044; }
-    .run-btn:disabled { background: #3D4F6B; cursor: not-allowed; }
-    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:2px; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
-    .b-bull { background:#18B85A18; color:#18B85A; border:1px solid #18B85A44; }
-    .b-bear { background:#E0383818; color:#E03838; border:1px solid #E0383844; }
-    .b-neut { background:#7A5C0A28; color:#C8A020; border:1px solid #7A5C0A88; }
-    .ticker-wrap { overflow:hidden; white-space:nowrap; border-top:1px solid #192030; border-bottom:1px solid #192030; background:#0B0E16; height:27px; display:flex; align-items:center; }
-    .ticker-track { display:inline-flex; animation:ticker 55s linear infinite; }
-    .step-row { display:flex; align-items:flex-start; gap:10px; padding:6px 0; border-bottom:1px solid #19203022; }
-    .step-row:last-child { border-bottom:none; }
-    .snum { width:18px; height:18px; border-radius:3px; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; }
-    .s-idle   { background:#192030; color:#3D4F6B; }
-    .s-active { background:#C8A02028; color:#C8A020; border:1px solid #C8A02055; animation:glow 1.5s infinite; }
-    .s-done   { background:#18B85A22; color:#18B85A; border:1px solid #18B85A44; }
-    .spinner  { width:11px; height:11px; flex-shrink:0; margin-top:3px; border:2px solid #C8A02033; border-top-color:#C8A020; border-radius:50%; animation:spin .7s linear infinite; }
-    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
-    .ha-notice { padding:8px 12px; background:#2E7FE814; border:1px solid #2E7FE844; border-radius:4px; font-size:10px; color:#2E7FE8; line-height:1.7; }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Gold Intelligence</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#07090D;color:#D0DFF8;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0B0E16}::-webkit-scrollbar-thumb{background:#253050;border-radius:2px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes glow{0%,100%{text-shadow:0 0 8px #C8A02066}50%{text-shadow:0 0 20px #C8A020cc}}
+.app{display:flex;flex-direction:column;min-height:100vh}
+.header{background:#0B0E16;border-bottom:1px solid #192030;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ticker-bar{height:26px;background:#0B0E16;border-bottom:1px solid #192030;overflow:hidden;white-space:nowrap;display:flex;align-items:center}
+.ticker-track{display:inline-flex;animation:ticker 50s linear infinite;font-size:10px;color:#6880A0;letter-spacing:.04em}
+.main{display:grid;grid-template-columns:260px 1fr 280px;gap:12px;padding:12px 16px;flex:1}
+.panel{background:#0B0E16;border:1px solid #192030;border-radius:6px;overflow:hidden}
+.ph{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #192030;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6880A0;font-weight:600}
+.pb{padding:14px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot-g{background:#18B85A;animation:pulse 1.8s infinite}
+.dot-y{background:#C8A020;animation:pulse 2.2s infinite}
+.score-hero{text-align:center;padding:20px 14px}
+.score-ring-wrap{position:relative;width:160px;height:160px;margin:0 auto 12px}
+.score-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.score-val{font-size:38px;font-weight:700;line-height:1;font-family:'Courier New',monospace;animation:glow 3s infinite}
+.score-lbl{font-size:9px;color:#6880A0;letter-spacing:.12em;margin-top:4px}
+.score-tag{display:inline-block;padding:4px 14px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.1em;margin-top:8px}
+.factor-row{margin-bottom:10px}
+.factor-hdr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;color:#6880A0}
+.factor-hdr span:last-child{font-weight:700}
+.factor-track{height:4px;background:#192030;border-radius:2px;overflow:hidden}
+.factor-bar{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.input-group{margin-bottom:14px}
+.input-label{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:#6880A0;letter-spacing:.06em}
+.input-label span:last-child{color:#C8A020;font-weight:600;font-family:'Courier New',monospace}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:#192030;outline:none;cursor:pointer;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#C8A020;cursor:pointer;box-shadow:0 0 8px #C8A02066}
+select{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none;width:100%;cursor:pointer;font-family:inherit}
+select:focus{border-color:#C8A02066}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.run-btn{width:100%;padding:12px;background:linear-gradient(135deg,#7A5C0A,#C8A020);color:#07090D;border:none;border-radius:5px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.run-btn:hover:not(:disabled){background:linear-gradient(135deg,#C8A020,#E6BB3A);box-shadow:0 0 28px #C8A02055}
+.run-btn:disabled{background:#253050;color:#6880A0;cursor:not-allowed}
+.spinner{width:14px;height:14px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spinner.visible{display:block}
+.signal-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #19203022;font-size:11px;color:#7A90B0;line-height:1.5}
+.signal-item:last-child{border-bottom:none}
+.result-card{animation:fadeIn .4s ease;display:none}
+.result-card.visible{display:block}
+.bias-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bias-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.conf-bar-wrap{flex:1;height:5px;background:#192030;border-radius:3px;overflow:hidden}
+.conf-bar{height:100%;border-radius:3px;transition:width 1s ease}
+.conf-val{font-size:20px;font-weight:700;font-family:'Courier New',monospace}
+.vbadge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.08em;margin-right:6px;margin-bottom:6px}
+.summary-text{font-size:12px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:12px;margin:12px 0}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+.col-title{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.col-item{font-size:10px;color:#7A90B0;margin-bottom:4px;line-height:1.5;display:flex;gap:4px}
+.log-area{font-family:'Courier New',monospace;font-size:10px;line-height:1.9;padding:10px 12px;min-height:100px;color:#6880A0;max-height:160px;overflow-y:auto}
+.log-line.ok{color:#18B85A}.log-line.err{color:#E03838}.log-line.ai{color:#C8A020}.log-line.web{color:#2E7FE8}
+.pipe-row{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #19203022}
+.pipe-row:last-child{border-bottom:none}
+.pipe-num{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.pn-idle{background:#192030;color:#6880A0}.pn-active{background:#C8A02033;color:#C8A020;border:1px solid #C8A02055}.pn-done{background:#18B85A22;color:#18B85A;border:1px solid #18B85A44}
+.pipe-spin{width:10px;height:10px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;margin-top:4px}
+.key-status{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 8px;border-radius:3px}
+.key-ok{background:#18B85A18;color:#18B85A;border:1px solid #18B85A33}
+.key-no{background:#E0383818;color:#E03838;border:1px solid #E0383833}
+</style>
 </head>
 <body>
-<div id="root"></div>
-
-<script type="text/babel">
-const { useState, useCallback, useEffect } = React;
-
-const T = {
-  bg:'#07090D', panel:'#0B0E16', border:'#192030',
-  gold:'#C8A020', goldL:'#E6BB3A', goldD:'#7A5C0A',
-  green:'#18B85A', red:'#E03838', blue:'#2E7FE8',
-  muted:'#3D4F6B', text:'#D0DFF8', dim:'#6880A0',
-};
-const SANS = "'IBM Plex Sans', sans-serif";
-const MONO = "'IBM Plex Mono', monospace";
-
-// ── Quant Engine (client-side, identico al backend) ───────────────────────
-function computeScore(d) {
-  let s = 0; const b = [];
-  const etf = +d.etf_flows, w = Math.min(30, Math.round(Math.abs(etf)/30));
-  etf>0 ? (s+=w,  b.push({l:"ETF Inflows",   v:+w,  c:T.green}))
-        : (s-=w,  b.push({l:"ETF Outflows",  v:-w,  c:T.red}));
-  const cot = +d.cot_positioning;
-  cot>0 ? (s+=25, b.push({l:"COT Net Long",  v:+25, c:T.green}))
-        : (s-=25, b.push({l:"COT Net Short", v:-25, c:T.red}));
-  const ry = +d.real_yields;
-  if(ry<-.5){s+=20;b.push({l:"Yields Deep−",v:+20,c:T.green})}
-  else if(ry<0){s+=10;b.push({l:"Yields Mild−",v:+10,c:T.green})}
-  else if(ry<.5){s-=10;b.push({l:"Yields Mild+",v:-10,c:T.red})}
-  else{s-=20;b.push({l:"Yields High+",v:-20,c:T.red})}
-  if(d.usd_trend==="down"){s+=15;b.push({l:"USD Weak",v:+15,c:T.green})}
-  if(d.usd_trend==="up"){s-=15;b.push({l:"USD Strong",v:-15,c:T.red})}
-  if(d.gold_trend==="up"){s+=10;b.push({l:"Gold ↑",v:+10,c:T.green})}
-  if(d.gold_trend==="down"){s-=10;b.push({l:"Gold ↓",v:-10,c:T.red})}
-  return {score:Math.max(-100,Math.min(100,Math.round(s))),breakdown:b};
+<div class="app">
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:30px;height:30px;border-radius:5px;background:linear-gradient(135deg,#7A5C0A,#C8A020);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#07090D">◈</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#C8A020;letter-spacing:.04em">GOLD INTELLIGENCE</div>
+      <div style="font-size:9px;color:#6880A0;letter-spacing:.1em">XAU/USD · SMART MONEY · CLAUDE AI · HOME ASSISTANT</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <div class="key-status key-no" id="anthropic-badge">● Claude non configurato</div>
+    <div id="engine-badge" style="font-size:10px;color:#6880A0">caricamento...</div>
+  </div>
+</div>
+<div class="ticker-bar">
+  <div class="ticker-track">
+    <span style="margin-right:60px">◈&nbsp;&nbsp;XAU/USD · Gold Intelligence · Quant + Claude AI</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Smart Money Score: ETF + COT + Yields + USD + Trend</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;LLM attivato solo se |score| &gt; soglia · Cache 60min</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fallback automatico Claude + web_search</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;XAU/USD · Gold Intelligence · Quant + Claude AI</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Smart Money Score: ETF + COT + Yields + USD + Trend</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;LLM attivato solo se |score| &gt; soglia · Cache 60min</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fallback automatico Claude + web_search</span>
+  </div>
+</div>
+<div class="main">
+  <!-- LEFT -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel">
+      <div class="ph"><div class="dot dot-y"></div>Smart Money Score</div>
+      <div class="score-hero">
+        <div class="score-ring-wrap">
+          <svg viewBox="0 0 160 160" width="160" height="160">
+            <circle cx="80" cy="80" r="66" fill="none" stroke="#192030" stroke-width="10" stroke-dasharray="311 415" stroke-dashoffset="-52" stroke-linecap="round"/>
+            <circle cx="80" cy="80" r="66" fill="none" id="score-arc" stroke="#C8A020" stroke-width="10" stroke-dasharray="0 415" stroke-dashoffset="-52" stroke-linecap="round" style="transition:stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1),stroke .5s"/>
+          </svg>
+          <div class="score-center">
+            <div class="score-val" id="score-val" style="color:#C8A020">+0</div>
+            <div class="score-lbl">/ 100</div>
+          </div>
+        </div>
+        <div class="score-tag" id="score-tag" style="background:#C8A02018;color:#C8A020;border:1px solid #C8A02044">NEUTRALE</div>
+        <div style="margin-top:10px;font-size:10px;color:#6880A0" id="threshold-note">⊘ Imposta parametri per iniziare</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span style="color:#6880A0">⊞</span>Fattori Smart Money</div>
+      <div class="pb" id="factors-panel"></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="dot dot-g"></div>Pipeline</div>
+      <div id="pipeline-panel" style="padding:8px 14px"></div>
+    </div>
+  </div>
+  <!-- CENTER -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel">
+      <div class="ph"><span style="color:#C8A020">◈</span>XAU/USD — Andamento Simulato (7gg) + Score</div>
+      <div style="padding:10px 14px"><canvas id="priceChart" height="130"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span style="color:#2E7FE8">⊞</span>Parametri di Mercato</div>
+      <div class="pb">
+        <div class="grid2">
+          <div class="input-group">
+            <div class="input-label"><span>ETF FLOWS 7D (M USD)</span><span id="v-etf">+450</span></div>
+            <input type="range" id="r-etf" min="-1000" max="1000" step="50" value="450" oninput="onSlider()">
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>COT NET POSITIONING</span><span id="v-cot">+145K</span></div>
+            <input type="range" id="r-cot" min="-300000" max="300000" step="5000" value="145000" oninput="onSlider()">
+          </div>
+          <div class="input-group">
+            <div class="input-label"><span>REAL YIELDS Δ7D</span><span id="v-ry">-0.3%</span></div>
+            <input type="range" id="r-ry" min="-2" max="2" step="0.1" value="-0.3" oninput="onSlider()">
+          </div>
+        </div>
+        <div class="grid3" style="margin-top:4px">
+          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">USD TREND</div>
+            <select id="s-usd" onchange="onSlider()"><option value="down">↓ Weakening</option><option value="up">↑ Strengthening</option><option value="flat">→ Flat</option></select></div>
+          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">GOLD TREND</div>
+            <select id="s-gt" onchange="onSlider()"><option value="up">↑ Uptrend</option><option value="down">↓ Downtrend</option><option value="sideways">→ Sideways</option></select></div>
+          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">MACRO EVENT</div>
+            <select id="s-macro" onchange="onSlider()">
+              <option>Fed hold expected</option><option>Fed cut expected</option><option>Fed hike expected</option>
+              <option>CPI above consensus</option><option>CPI below consensus</option>
+              <option>Risk-off geopolitical</option><option>Strong NFP data</option><option>Recession signals</option>
+            </select></div>
+        </div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #192030;display:flex;gap:8px;align-items:center">
+          <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;white-space:nowrap">ENGINE</div>
+          <select id="s-mode" style="flex:1"><option value="auto">Auto (da config addon)</option><option value="claude">Claude + Web Search</option><option value="dual">Perplexity + Claude</option></select>
+        </div>
+        <div style="margin-top:14px">
+          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+            <div class="spinner" id="btn-spinner"></div>
+            <span id="btn-label">▶ ANALIZZA CON AI</span>
+          </button>
+        </div>
+        <div id="no-key-warn" style="margin-top:8px;font-size:10px;color:#E03838;display:none">⚠ API key mancante — configura l'addon in HA Settings</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span style="color:#2E7FE8">⊙</span>Segnali Estratti → Input AI</div>
+      <div id="signals-list" style="padding:8px 14px"></div>
+    </div>
+    <div class="panel result-card" id="result-card">
+      <div class="ph"><div class="dot dot-y"></div>Claude AI — Analisi Validata<span id="result-engine-badge" style="margin-left:4px;font-size:9px;color:#7A5C0A"></span><span style="margin-left:auto;font-size:9px;color:#18B85A">● LIVE</span></div>
+      <div class="pb">
+        <div class="bias-row">
+          <div class="bias-badge" id="bias-badge">→ NEUTRALE</div>
+          <div class="conf-bar-wrap"><div class="conf-bar" id="conf-bar" style="width:0%;background:#C8A020"></div></div>
+          <div class="conf-val" id="conf-val" style="color:#C8A020">0%</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;margin-bottom:10px">
+          <span class="vbadge" id="val-badge">⚡ MISTO</span>
+          <span class="vbadge" id="conv-badge" style="background:#19203044;color:#6880A0;border:1px solid #19203088">CONVERGENZA —</span>
+          <span class="vbadge" id="horizon-badge" style="background:#19203044;color:#6880A0;border:1px solid #19203088">—</span>
+        </div>
+        <div class="summary-text" id="summary-text">—</div>
+        <div id="findings-section" style="display:none;margin-top:10px">
+          <div style="font-size:9px;color:#2E7FE8;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">🔍 WEB FINDINGS</div>
+          <div id="findings-list"></div>
+        </div>
+        <div class="three-col">
+          <div><div class="col-title" style="color:#18B85A">DRIVERS</div><div id="drivers-list"></div></div>
+          <div><div class="col-title" style="color:#E03838">RISCHI</div><div id="risks-list"></div></div>
+          <div><div class="col-title" style="color:#C8A020">CONFLITTI</div><div id="conflicts-list"></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="noise-msg" style="display:none;padding:12px 14px;background:#0B0E16;border:1px solid #192030;border-radius:6px;font-size:11px;color:#6880A0;line-height:1.8">⚡ Score sotto soglia — nessun segnale forte. Muovi i parametri oltre ±30 per attivare l'AI.</div>
+  </div>
+  <!-- RIGHT -->
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="panel">
+      <div class="ph"><span style="color:#C8A020">◈</span>Radar Fattori</div>
+      <div style="padding:16px 14px"><canvas id="radarChart" height="190"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="dot dot-g"></div>Execution Log</div>
+      <div class="log-area" id="log-area"><div style="color:#6880A0">In attesa di analisi...</div></div>
+    </div>
+    <div class="panel" id="json-panel" style="display:none">
+      <div class="ph"><span style="color:#6880A0">{}</span>Output JSON</div>
+      <pre id="json-out" style="padding:10px 12px;font-size:9px;line-height:1.7;color:#6880A0;overflow:auto;max-height:200px;font-family:'Courier New',monospace"></pre>
+    </div>
+    <div class="panel">
+      <div class="ph"><span style="color:#6880A0">◎</span>Come Funziona</div>
+      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2">
+        <div><span style="color:#C8A020">⊕</span> Calcola Smart Money Score dai parametri</div>
+        <div><span style="color:#2E7FE8">🔍</span> Se |score| &gt; 30 attiva l'AI</div>
+        <div><span style="color:#8B5CF6">⬡</span> Perplexity cerca news macro reali</div>
+        <div><span style="color:#C8A020">◈</span> Claude valida e sintetizza</div>
+        <div><span style="color:#18B85A">✓</span> Output: bias + confidence + drivers</div>
+        <div style="margin-top:8px;padding:8px 10px;background:#07090D;border-radius:4px;line-height:2">
+          <span style="color:#C8A020">Pesi score:</span><br>
+          ETF Flows &nbsp;→ max 30 pt<br>
+          COT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ 25 pt<br>
+          Real Yields → 20 pt<br>
+          USD Trend &nbsp;→ 15 pt<br>
+          Gold Trend &nbsp;→ 10 pt
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+let cfg={has_anthropic:false,has_perplexity:false,engine_mode:'auto',score_threshold:30};
+let loading=false;
+const STEPS=[
+  {l:'Validazione Input',  s:'Normalizza e controlla'},
+  {l:'Smart Money Score',  s:'Calcolo quantitativo'},
+  {l:'Segnali Estratti',   s:'Feature engineering'},
+  {l:'Grounding Web',      s:'Perplexity / web_search'},
+  {l:'Sintesi Claude',     s:'Validazione + JSON'},
+  {l:'Completato',         s:'Risultati pronti'},
+];
+function computeScore(d){
+  let s=0;const b=[];
+  const etf=+d.etf_flows,w=Math.min(30,Math.round(Math.abs(etf)/30));
+  etf>0?(s+=w,b.push({l:'ETF Inflows',v:+w,c:'#18B85A',i:'▲'})):(s-=w,b.push({l:'ETF Outflows',v:-w,c:'#E03838',i:'▼'}));
+  const cot=+d.cot_positioning;
+  cot>0?(s+=25,b.push({l:'COT Net Long',v:+25,c:'#18B85A',i:'▲'})):(s-=25,b.push({l:'COT Net Short',v:-25,c:'#E03838',i:'▼'}));
+  const ry=+d.real_yields;
+  if(ry<-.5){s+=20;b.push({l:'Yields Deep−',v:+20,c:'#18B85A',i:'▲'})}
+  else if(ry<0){s+=10;b.push({l:'Yields Mild−',v:+10,c:'#18B85A',i:'▲'})}
+  else if(ry<.5){s-=10;b.push({l:'Yields Mild+',v:-10,c:'#E03838',i:'▼'})}
+  else{s-=20;b.push({l:'Yields High+',v:-20,c:'#E03838',i:'▼'})}
+  if(d.usd_trend==='down'){s+=15;b.push({l:'USD Weak',v:+15,c:'#18B85A',i:'▲'})}
+  else if(d.usd_trend==='up'){s-=15;b.push({l:'USD Strong',v:-15,c:'#E03838',i:'▼'})}
+  if(d.gold_trend==='up'){s+=10;b.push({l:'Gold ↑Trend',v:+10,c:'#18B85A',i:'▲'})}
+  else if(d.gold_trend==='down'){s-=10;b.push({l:'Gold ↓Trend',v:-10,c:'#E03838',i:'▼'})}
+  return{score:Math.max(-100,Math.min(100,Math.round(s))),breakdown:b};
 }
-
-// ── API calls verso il backend locale (stesso container) ──────────────────
-const API = ""; // stesso origin → no CORS
-
-async function apiScore(data) {
-  const r = await fetch(`${API}/api/score`, {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify(data),
+function enrichSignals(d){
+  const etf=+d.etf_flows,cot=+d.cot_positioning,ry=+d.real_yields;
+  return[
+    etf>500?`ETF accumulation aggressiva +${etf}M USD`:etf>0?`ETF inflows moderati +${etf}M USD`:etf>-500?`ETF outflows ${etf}M USD`:`Distribuzione ETF pesante ${etf}M USD`,
+    cot>150000?`Hedge funds estremamente long +${(cot/1000).toFixed(0)}K — posizione affollata`:cot>0?`Hedge funds net long +${(cot/1000).toFixed(0)}K`:`Hedge funds net short ${(cot/1000).toFixed(0)}K`,
+    ry<-.5?`Real yields profondamente negativi ${ry}% — forte tailwind oro`:ry<0?`Real yields negativi ${ry}% — supporto moderato`:`Real yields positivi +${ry}% — headwind oro`,
+    {down:'USD in downtrend — bid meccanico sull\'oro',up:'USD in rafforzamento — frena XAU/USD',flat:'USD piatto — fattore FX neutro'}[d.usd_trend]||'',
+    `Contesto macro: ${d.macro_event}`,
+  ].filter(Boolean);
+}
+function getData(){return{etf_flows:+document.getElementById('r-etf').value,cot_positioning:+document.getElementById('r-cot').value,real_yields:+document.getElementById('r-ry').value,usd_trend:document.getElementById('s-usd').value,gold_trend:document.getElementById('s-gt').value,macro_event:document.getElementById('s-macro').value};}
+function onSlider(){
+  const d=getData();
+  document.getElementById('v-etf').textContent=(d.etf_flows>0?'+':'')+d.etf_flows;
+  document.getElementById('v-cot').textContent=(d.cot_positioning>0?'+':'')+Math.round(d.cot_positioning/1000)+'K';
+  document.getElementById('v-ry').textContent=(d.real_yields>0?'+':'')+d.real_yields.toFixed(1)+'%';
+  const{score,breakdown}=computeScore(d);
+  updateRing(score);updateFactors(breakdown);updateSignals(enrichSignals(d));drawRadar(breakdown);drawPrice(score);
+}
+function updateRing(score){
+  const col=score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
+  const arc=document.getElementById('score-arc');
+  arc.style.strokeDasharray=`${311*Math.abs(score)/100} 415`;arc.style.stroke=col;
+  const el=document.getElementById('score-val');el.textContent=(score>0?'+':'')+score;el.style.color=col;
+  const tEl=document.getElementById('score-tag');
+  const lbl=score>60?'STRONG BULL':score>25?'BULL':score<-60?'STRONG BEAR':score<-25?'BEAR':'NEUTRALE';
+  tEl.textContent=lbl;tEl.style.background=col+'18';tEl.style.color=col;tEl.style.border=`1px solid ${col}44`;
+  const note=document.getElementById('threshold-note');
+  const thr=cfg.score_threshold||30;
+  if(Math.abs(score)>thr){note.textContent=`⚡ Segnale attivo → AI si attiva`;note.style.color='#18B85A';}
+  else{note.textContent=`⊘ Sotto soglia ±${thr} — AI inattiva`;note.style.color='#6880A0';}
+}
+function updateFactors(b){
+  const el=document.getElementById('factors-panel');
+  el.innerHTML=b.map(f=>`<div class="factor-row"><div class="factor-hdr"><span style="color:${f.c}">${f.i} ${f.l}</span><span style="color:${f.c}">${f.v>0?'+':''}${f.v} pt</span></div><div class="factor-track"><div class="factor-bar" style="width:${Math.abs(f.v)}%;background:${f.c};box-shadow:0 0 5px ${f.c}55"></div></div></div>`).join('')+
+  `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #192030;display:flex;justify-content:space-between;font-size:12px"><span style="color:#6880A0;font-weight:600">TOTALE</span><span style="font-weight:700;font-size:15px;color:${b.reduce((a,x)=>a+x.v,0)>0?'#18B85A':b.reduce((a,x)=>a+x.v,0)<0?'#E03838':'#C8A020'};font-family:'Courier New',monospace">${b.reduce((a,x)=>a+x.v,0)>0?'+':''}${b.reduce((a,x)=>a+x.v,0)}</span></div>`;
+}
+function updateSignals(sigs){document.getElementById('signals-list').innerHTML=sigs.map(s=>`<div class="signal-item"><span style="color:#C8A020;flex-shrink:0;margin-top:1px">▸</span><span>${s}</span></div>`).join('');}
+function setPipe(step){
+  document.getElementById('pipeline-panel').innerHTML=STEPS.map((s,i)=>{
+    const st=i<step?'done':i===step?'active':'idle';
+    const col=st==='active'?'#C8A020':st==='done'?'#18B85A':'#6880A0';
+    const num=st==='done'?'✓':st==='active'?'▶':i+1;
+    return`<div class="pipe-row"><div class="pipe-num pn-${st}">${num}</div><div style="flex:1"><div style="font-size:10.5px;font-weight:500;color:${col}">${s.l}</div><div style="font-size:9px;color:#6880A044;margin-top:1px">${s.s}</div></div>${st==='active'?'<div class="pipe-spin"></div>':''}</div>`;
+  }).join('');
+}
+function addLog(msg,cls=''){
+  const el=document.getElementById('log-area');
+  if(el.children.length===1&&el.children[0].textContent==='In attesa di analisi...')el.innerHTML='';
+  const d=document.createElement('div');d.className='log-line'+(cls?' '+cls:'');
+  d.textContent=new Date().toLocaleTimeString()+' '+msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function drawPrice(score){
+  const canvas=document.getElementById('priceChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.offsetWidth-28||500,H=130;
+  canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);
+  const n=40,trend=score/250;const pts=[];let p=2310;
+  for(let i=0;i<n;i++){p+=(Math.random()-.47+trend)*9;pts.push(Math.max(2100,Math.min(2600,p)));}
+  const mn=Math.min(...pts)-8,mx=Math.max(...pts)+8;
+  const toY=v=>H-((v-mn)/(mx-mn))*(H-24)-12;
+  const toX=i=>(i/(n-1))*W;
+  const col=score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
+  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,col+'28');bg.addColorStop(1,'transparent');
+  ctx.fillStyle=bg;ctx.beginPath();ctx.moveTo(toX(0),H);
+  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();
+  pts.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));ctx.stroke();
+  // Dots at start and end
+  [0,n-1].forEach(i=>{ctx.fillStyle=col;ctx.beginPath();ctx.arc(toX(i),toY(pts[i]),4,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle='#D0DFF8';ctx.font='bold 11px Courier New';ctx.textAlign='center';
+  ctx.fillText(`XAU/USD ~${pts[n-1].toFixed(0)}`,W/2,14);
+  ctx.fillStyle='#6880A0';ctx.font='9px monospace';ctx.textAlign='left';
+  ctx.fillText(`${mn.toFixed(0)}`,4,H-4);ctx.fillText(`${mx.toFixed(0)}`,4,12);
+  ctx.textAlign='right';ctx.fillText('7 giorni →',W-4,H-4);
+}
+function drawRadar(breakdown){
+  const canvas=document.getElementById('radarChart');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.offsetWidth-28||240,H=190;
+  canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);
+  const cx=W/2,cy=H/2+5,r=72;
+  const factors=[
+    {l:'ETF',  v:breakdown.find(b=>b.l.includes('ETF'))?.v||0,  max:30},
+    {l:'COT',  v:breakdown.find(b=>b.l.includes('COT'))?.v||0,  max:25},
+    {l:'Yields',v:breakdown.find(b=>b.l.includes('Yield'))?.v||0,max:20},
+    {l:'USD',  v:breakdown.find(b=>b.l.includes('USD'))?.v||0,  max:15},
+    {l:'Trend',v:breakdown.find(b=>b.l.includes('Trend'))?.v||0,max:10},
+  ];
+  const n=factors.length,angle=i=>(i/n)*Math.PI*2-Math.PI/2;
+  [.25,.5,.75,1].forEach(p=>{
+    ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.beginPath();
+    factors.forEach((_,i)=>{const a=angle(i),x=cx+Math.cos(a)*r*p,y=cy+Math.sin(a)*r*p;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+    ctx.closePath();ctx.stroke();
   });
-  if (!r.ok) throw new Error(`/api/score ${r.status}`);
-  return r.json();
+  ctx.setLineDash([]);
+  factors.forEach((_,i)=>{const a=angle(i);ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();});
+  ctx.beginPath();
+  factors.forEach((f,i)=>{const a=angle(i),p=(f.v+f.max)/(f.max*2),x=cx+Math.cos(a)*r*p,y=cy+Math.sin(a)*r*p;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.closePath();ctx.fillStyle='#C8A02033';ctx.fill();ctx.strokeStyle='#C8A020';ctx.lineWidth=2;ctx.stroke();
+  ctx.font='bold 10px sans-serif';ctx.textAlign='center';
+  factors.forEach((f,i)=>{const a=angle(i),lx=cx+Math.cos(a)*(r+18),ly=cy+Math.sin(a)*(r+18)+4;ctx.fillStyle=f.v>0?'#18B85A':f.v<0?'#E03838':'#6880A0';ctx.fillText(f.l,lx,ly);});
 }
-
-async function apiAnalyze(data, mode) {
-  const r = await fetch(`${API}/api/analyze`, {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({...data, mode}),
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
-  return r.json();
+async function runAnalysis(){
+  if(loading)return;
+  const d=getData();const{score}=computeScore(d);const thr=cfg.score_threshold||30;
+  document.getElementById('result-card').classList.remove('visible');
+  document.getElementById('noise-msg').style.display='none';
+  document.getElementById('json-panel').style.display='none';
+  loading=true;
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('btn-spinner').classList.add('visible');
+  document.getElementById('btn-label').textContent='ANALISI IN CORSO...';
+  document.getElementById('log-area').innerHTML='';
+  setPipe(0);addLog('▶ Validazione parametri...');await sl(300);
+  setPipe(1);addLog('⊕ Smart Money Score...');await sl(400);
+  addLog(`✓ Score: ${score>0?'+':''}${score}/100 [${Math.abs(score)>thr?'SEGNALE':'NOISE'}]`,'ok');
+  setPipe(2);addLog('⊞ Estrazione segnali...');await sl(300);
+  addLog(`✓ ${enrichSignals(d).length} segnali estratti`,'ok');
+  if(Math.abs(score)<=thr){addLog(`⚡ Sotto soglia ±${thr} — AI skippata`);setPipe(5);document.getElementById('noise-msg').style.display='block';resetBtn();return;}
+  setPipe(3);const mode=document.getElementById('s-mode').value;addLog(`⬡ Backend (mode=${mode})...`,'ai');
+  try{
+    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...d,mode})});
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();addLog('✓ Risposta ricevuta','ok');
+    setPipe(4);addLog('◈ Sintesi Claude...',  'ai');
+    const a=data.analysis||{};
+    addLog(`✓ bias=${a.bias} conf=${a.confidence}% val=${a.validation}`,'ok');
+    if(data.web_context?.web_searches_done?.length)addLog(`🔍 ${data.web_context.web_searches_done.length} ricerche web`,'web');
+    setPipe(5);showResult(a,data.engine_used);
+  }catch(e){addLog('✗ '+e.message,'err');setPipe(-1);}
+  resetBtn();
 }
-
-async function apiConfig() {
-  const r = await fetch(`${API}/api/config`);
-  return r.json();
+function showResult(a,engine){
+  if(!a||a._skipped){document.getElementById('noise-msg').style.display='block';return;}
+  document.getElementById('result-card').classList.add('visible');
+  const col=a.bias==='bullish'?'#18B85A':a.bias==='bearish'?'#E03838':'#C8A020';
+  const biasIcon=a.bias==='bullish'?'▲ BULLISH':a.bias==='bearish'?'▼ BEARISH':'→ NEUTRALE';
+  document.getElementById('result-engine-badge').textContent=engine==='dual'?'Perplexity+Claude':'Claude+web';
+  const bb=document.getElementById('bias-badge');bb.textContent=biasIcon;bb.style.background=col+'18';bb.style.color=col;bb.style.border=`1px solid ${col}44`;
+  const conf=a.confidence||0;
+  document.getElementById('conf-bar').style.width=conf+'%';document.getElementById('conf-bar').style.background=col;
+  document.getElementById('conf-val').textContent=conf+'%';document.getElementById('conf-val').style.color=col;
+  const valCol=a.validation==='confirmed'?'#18B85A':a.validation==='contradicted'?'#E03838':'#C8A020';
+  const valTxt=a.validation==='confirmed'?'✓ WEB CONFERMATO':a.validation==='contradicted'?'✗ CONTRADDETTO':'⚡ MISTO';
+  const vb=document.getElementById('val-badge');vb.textContent=valTxt;vb.style.background=valCol+'18';vb.style.color=valCol;vb.style.border=`1px solid ${valCol}44`;
+  document.getElementById('conv-badge').textContent=`CONV. ${a.convergence_score||'—'}%`;
+  document.getElementById('horizon-badge').textContent=(a.time_horizon||'—').toUpperCase();
+  document.getElementById('summary-text').textContent=a.summary||'—';
+  const wf=a.web_findings||[];
+  if(wf.length>0){document.getElementById('findings-section').style.display='block';document.getElementById('findings-list').innerHTML=wf.map(f=>`<div style="font-size:10.5px;color:#7A90B0;margin-bottom:4px;display:flex;gap:6px;line-height:1.5"><span style="color:#2E7FE8;flex-shrink:0">▸</span><span>${f}</span></div>`).join('');}
+  document.getElementById('drivers-list').innerHTML=(a.drivers||[]).map(d=>`<div class="col-item"><span style="color:#18B85A">+</span><span>${d}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
+  document.getElementById('risks-list').innerHTML=(a.risk_factors||[]).map(r=>`<div class="col-item"><span style="color:#E03838">!</span><span>${r}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
+  document.getElementById('conflicts-list').innerHTML=(a.contradictions||[]).length>0?(a.contradictions||[]).map(c=>`<div class="col-item"><span style="color:#C8A020">⚡</span><span>${c}</span></div>`).join(''):'<div style="color:#18B85A;font-size:10px">Nessuno</div>';
+  document.getElementById('json-panel').style.display='block';
+  document.getElementById('json-out').textContent=JSON.stringify({engine,smart_money_score:computeScore(getData()).score,analysis:a},null,2);
 }
-
-// ── Components ────────────────────────────────────────────────────────────
-function Panel({children, style={}}) {
-  return <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:5,...style}}>{children}</div>;
+function resetBtn(){loading=false;document.getElementById('run-btn').disabled=!cfg.has_anthropic;document.getElementById('btn-spinner').classList.remove('visible');document.getElementById('btn-label').textContent='▶ ANALIZZA CON AI';}
+const sl=ms=>new Promise(r=>setTimeout(r,ms));
+async function init(){
+  try{const res=await fetch('/api/config');cfg=await res.json();
+    const ab=document.getElementById('anthropic-badge');
+    if(cfg.has_anthropic){ab.textContent='● Claude OK';ab.className='key-status key-ok';}
+    else{ab.textContent='● Claude non configurato';ab.className='key-status key-no';document.getElementById('no-key-warn').style.display='block';document.getElementById('run-btn').disabled=true;}
+    document.getElementById('engine-badge').textContent=`engine: ${cfg.has_perplexity?'dual':'claude'} | soglia: ±${cfg.score_threshold}`;
+    document.getElementById('engine-badge').style.color=cfg.has_perplexity?'#8B5CF6':'#C8A020';
+  }catch(e){console.warn('Config non disponibile:',e);}
+  onSlider();setPipe(-1);
+  window.addEventListener('resize',()=>{onSlider();});
 }
-function Hdr({icon, label, sub, right}) {
-  return (
-    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:`1px solid ${T.border}`,fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:T.dim}}>
-      {icon && <span style={{fontSize:12}}>{icon}</span>}
-      {label}
-      {sub && <span style={{fontSize:9,color:T.dim,marginLeft:2,letterSpacing:".04em",textTransform:"none"}}>{sub}</span>}
-      {right && <span style={{marginLeft:"auto"}}>{right}</span>}
-    </div>
-  );
-}
-function Dot({color, pulse=true}) {
-  return <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0,animation:pulse?"pulse 2s infinite":"none"}} />;
-}
-
-function Ticker() {
-  const items = ["XAU/USD  2,341  +0.42%","GLD  216.84  +0.38%","DXY  104.23  -0.18%","10Y TIPS  1.84%","COT GOLD  +187K","◈ GOLD INTELLIGENCE  HA ADDON  ●"];
-  const all = [...items,...items];
-  return (
-    <div className="ticker-wrap">
-      <div className="ticker-track">
-        {all.map((t,i)=>(
-          <span key={i} style={{marginRight:50,fontSize:10,color:T.dim}}>
-            <span style={{color:T.gold}}>◈</span>{"  "}{t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function Ring({score}) {
-  const r=52, c=2*Math.PI*r, dash=c*.75, pct=Math.abs(score)/100;
-  const col = score>30?T.green:score<-30?T.red:T.gold;
-  const lbl = score>60?"STRONG BULL":score>25?"BULL":score<-60?"STRONG BEAR":score<-25?"BEAR":"NEUTRAL";
-  return (
-    <div style={{textAlign:"center",padding:"14px 0"}}>
-      <div style={{position:"relative",width:120,height:120,margin:"0 auto"}}>
-        <svg viewBox="0 0 120 120" style={{transform:"rotate(135deg)"}}>
-          <circle cx="60" cy="60" r={r} fill="none" stroke={T.border} strokeWidth="7"
-            strokeDasharray={`${dash} ${c}`} strokeLinecap="round"/>
-          <circle cx="60" cy="60" r={r} fill="none" stroke={col} strokeWidth="7"
-            strokeDasharray={`${dash*pct} ${c}`} strokeLinecap="round"
-            style={{filter:`drop-shadow(0 0 5px ${col}88)`,transition:"stroke-dasharray .9s ease"}}/>
-        </svg>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
-          <div style={{fontSize:24,fontWeight:700,color:col,lineHeight:1}}>{score>0?"+":""}{score}</div>
-          <div style={{fontSize:8,color:T.muted,marginTop:2,letterSpacing:".1em"}}>SCORE</div>
-        </div>
-      </div>
-      <div style={{fontSize:10,fontWeight:600,color:col,letterSpacing:".14em",marginTop:2}}>{lbl}</div>
-    </div>
-  );
-}
-
-function Bar({item}) {
-  return (
-    <div style={{marginBottom:7}}>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:9.5,marginBottom:2}}>
-        <span style={{color:T.dim}}>{item.l}</span>
-        <span style={{color:item.c,fontWeight:600}}>{item.v>0?"+":""}{item.v}</span>
-      </div>
-      <div style={{height:2,background:T.border,borderRadius:2}}>
-        <div style={{height:"100%",width:`${Math.abs(item.v)}%`,background:item.c,
-          borderRadius:2,boxShadow:`0 0 4px ${item.c}44`,transition:"width 1s ease"}}/>
-      </div>
-    </div>
-  );
-}
-
-const STEPS_DUAL   = ["Input","Score","Signals","Perplexity","Claude","Done"];
-const STEPS_CLAUDE = ["Input","Score","Signals","Claude+Web","Done"];
-
-function Pipeline({steps, cur}) {
-  return (
-    <div style={{padding:"10px 14px"}}>
-      {steps.map((s,i)=>{
-        const st = i<cur?"done":i===cur?"active":"idle";
-        return (
-          <div className="step-row" key={i}>
-            <div className={`snum s-${st}`}>{st==="done"?"✓":st==="active"?"▶":i+1}</div>
-            <div style={{flex:1,fontSize:10.5,fontWeight:500,
-              color:st==="active"?T.gold:st==="done"?T.green:T.dim,marginTop:1}}>{s}</div>
-            {st==="active" && <div className="spinner"/>}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function Slider({label,min,max,step,value,onChange,fmt,unit=""}) {
-  return (
-    <div style={{marginBottom:14}}>
-      <div style={{display:"flex",justifyContent:"space-between",fontSize:9,marginBottom:5}}>
-        <span style={{color:T.dim,letterSpacing:".07em"}}>{label}</span>
-        <span style={{color:T.gold,fontWeight:600}}>{fmt?fmt(value):value}{unit}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e=>onChange(parseFloat(e.target.value))}/>
-    </div>
-  );
-}
-
-function ResultPanel({result, mode}) {
-  if (!result || result._skipped) return null;
-  const biasC = result.bias==="bullish"?"b-bull":result.bias==="bearish"?"b-bear":"b-neut";
-  const valCol = result.validation==="confirmed"?T.green:result.validation==="contradicted"?T.red:T.gold;
-  return (
-    <div className="fade-up">
-      <Panel style={{border:`1px solid ${T.gold}33`,background:`linear-gradient(135deg,${T.panel},#191208)`,marginTop:0}}>
-        <Hdr icon="◈" label="Claude — Synthesis"
-          sub={mode==="dual"?"validated via Perplexity":"validated via web_search"}
-          right={<span style={{fontSize:8,color:T.green}}>● LIVE</span>}/>
-        <div style={{padding:"14px 16px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-            <span className={`badge ${biasC}`}>
-              {result.bias==="bullish"?"▲":result.bias==="bearish"?"▼":"→"} {result.bias}
-            </span>
-            <div style={{flex:1}}>
-              <div style={{height:4,background:T.border,borderRadius:2}}>
-                <div style={{height:"100%",width:`${result.confidence}%`,borderRadius:2,transition:"width 1s",
-                  background:result.bias==="bullish"?T.green:result.bias==="bearish"?T.red:T.gold}}/>
-              </div>
-            </div>
-            <span style={{fontSize:18,fontWeight:700,
-              color:result.bias==="bullish"?T.green:result.bias==="bearish"?T.red:T.gold}}>
-              {result.confidence}%
-            </span>
-          </div>
-
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,fontWeight:600,
-              background:valCol+"18",color:valCol,border:`1px solid ${valCol}44`}}>
-              {result.validation==="confirmed"?"✓ CONFIRMED":result.validation==="contradicted"?"✗ CONTRADICTED":"⚡ MIXED"}
-            </div>
-            {result.convergence_score!=null &&
-              <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,background:T.border+"44",color:T.dim,border:`1px solid ${T.border}`}}>
-                CONVERGENCE <span style={{color:T.text,fontWeight:600}}>{result.convergence_score}%</span>
-              </div>}
-            <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,background:T.border+"44",color:T.dim,border:`1px solid ${T.border}`}}>
-              {result.time_horizon?.toUpperCase()}
-            </div>
-          </div>
-
-          <div style={{fontSize:11.5,lineHeight:1.75,color:T.text,fontFamily:SANS,
-            borderLeft:`2px solid ${T.gold}`,paddingLeft:12,marginBottom:14}}>
-            {result.summary}
-          </div>
-
-          {result.web_findings?.length > 0 &&
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:8.5,color:T.blue,letterSpacing:".1em",marginBottom:6}}>🔍 WEB FINDINGS</div>
-              {result.web_findings.map((f,i)=>(
-                <div key={i} style={{fontSize:10,color:T.dim,marginBottom:4,display:"flex",gap:6,lineHeight:1.55,fontFamily:SANS}}>
-                  <span style={{color:T.blue,flexShrink:0}}>▸</span>{f}
-                </div>
-              ))}
-            </div>}
-
-          <div className="g3">
-            <div>
-              <div style={{fontSize:8.5,color:T.green,letterSpacing:".1em",marginBottom:5}}>DRIVERS</div>
-              {result.drivers?.map((d,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4,lineHeight:1.5}}><span style={{color:T.green}}>+</span> {d}</div>)}
-            </div>
-            <div>
-              <div style={{fontSize:8.5,color:T.red,letterSpacing:".1em",marginBottom:5}}>RISKS</div>
-              {result.risk_factors?.map((r,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4,lineHeight:1.5}}><span style={{color:T.red}}>!</span> {r}</div>)}
-            </div>
-            <div>
-              <div style={{fontSize:8.5,color:T.gold,letterSpacing:".1em",marginBottom:5}}>CONFLICTS</div>
-              {result.contradictions?.length>0
-                ? result.contradictions.map((c,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4}}><span style={{color:T.gold}}>⚡</span> {c}</div>)
-                : <div style={{fontSize:9.5,color:T.muted}}>None</div>}
-            </div>
-          </div>
-        </div>
-      </Panel>
-    </div>
-  );
-}
-
-// ── Main App ──────────────────────────────────────────────────────────────
-const THRESHOLD = 30;
-
-export default function App() {
-  const [cfg,      setCfg]      = useState(null);
-  const [etf,      setEtf]      = useState(450);
-  const [cot,      setCot]      = useState(145000);
-  const [ry,       setRy]       = useState(-0.3);
-  const [usd,      setUsd]      = useState("down");
-  const [gt,       setGt]       = useState("up");
-  const [macro,    setMacro]    = useState("Fed hold expected");
-  const [step,     setStep]     = useState(-1);
-  const [loading,  setLoading]  = useState(false);
-  const [scoreD,   setScoreD]   = useState(null);
-  const [signals,  setSignals]  = useState([]);
-  const [result,   setResult]   = useState(null);
-  const [logs,     setLogs]     = useState([]);
-  const [error,    setError]    = useState(null);
-  const [usedMode, setUsedMode] = useState(null);
-
-  const data = {etf_flows:etf,cot_positioning:cot,real_yields:ry,usd_trend:usd,gold_trend:gt,macro_event:macro};
-  const live = computeScore(data);
-
-  const addLog = msg => setLogs(p=>[...p.slice(-10), `${new Date().toLocaleTimeString()} ${msg}`]);
-
-  // Carica config dal backend
-  useEffect(() => {
-    apiConfig().then(setCfg).catch(()=>setCfg({has_anthropic:false,has_perplexity:false,engine_mode:"auto",score_threshold:30}));
-  }, []);
-
-  const effectiveMode = cfg?.has_perplexity && cfg?.engine_mode!=="claude" ? "dual" : "claude";
-  const steps = effectiveMode==="dual" ? STEPS_DUAL : STEPS_CLAUDE;
-
-  const run = useCallback(async () => {
-    if (!cfg?.has_anthropic) { setError("Anthropic API key non configurata. Vai in Settings > Add-ons > Gold Intelligence > Configuration"); return; }
-    setLoading(true); setError(null); setResult(null); setScoreD(null); setSignals([]); setLogs([]);
-    setUsedMode(effectiveMode);
-
-    try {
-      setStep(0); addLog("▶ Validating…"); await sl(300);
-      setStep(1); addLog("⊕ Smart Money Score…"); await sl(350);
-
-      // Score via backend (validazione server-side)
-      const sd = await apiScore({...data, mode: effectiveMode});
-      setScoreD(sd.smart_money);
-      setSignals(sd.signals);
-      addLog(`✓ Score: ${sd.smart_money.score>0?"+":""}${sd.smart_money.score} [${Math.abs(sd.smart_money.score)>THRESHOLD?"SIGNAL":"NOISE"}]`);
-
-      setStep(2); await sl(300);
-
-      if (Math.abs(sd.smart_money.score) <= THRESHOLD) {
-        addLog(`⚡ Noise zone — LLM skipped`);
-        setResult({bias:"neutral",confidence:40,validation:"mixed",
-          summary:`Score ${sd.smart_money.score>0?"+":""}${sd.smart_money.score} sotto soglia ±${THRESHOLD}.`,
-          _skipped:true});
-        setStep(steps.length-1);
-        return;
-      }
-
-      if (effectiveMode==="dual") {
-        setStep(3); addLog("⬡ Perplexity sonar-pro…");
-      } else {
-        setStep(3); addLog("◈ Claude + web_search…");
-      }
-
-      const res = await apiAnalyze(data, effectiveMode);
-      setResult(res.analysis);
-      addLog(`✓ bias=${res.analysis?.bias} conf=${res.analysis?.confidence}% val=${res.analysis?.validation}`);
-      if (effectiveMode==="dual") setStep(4);
-      setStep(steps.length-1);
-      addLog("✓ Pipeline completa");
-    } catch(e) {
-      setError(e.message); addLog(`✗ ${e.message}`);
-    } finally { setLoading(false); }
-  }, [data, effectiveMode, cfg, steps.length]);
-
-  return (
-    <div style={{minHeight:"100vh"}}>
-      {/* Header */}
-      <div style={{background:T.panel,borderBottom:`1px solid ${T.border}`,padding:"0 20px",height:50,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:28,height:28,borderRadius:4,background:`linear-gradient(135deg,${T.goldD},${T.gold})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:T.bg}}>◈</div>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:T.gold,letterSpacing:".04em"}}>GOLD INTELLIGENCE</div>
-            <div style={{fontSize:8.5,color:T.muted,letterSpacing:".1em"}}>HOME ASSISTANT ADD-ON · SMART MONEY + AI</div>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:16,fontSize:9,color:T.dim,alignItems:"center"}}>
-          {cfg && <>
-            <span style={{color:cfg.has_anthropic?T.green:T.red}}>{cfg.has_anthropic?"● Claude OK":"✗ No Claude key"}</span>
-            <span style={{color:cfg.has_perplexity?"#A78BFA":T.muted}}>{cfg.has_perplexity?"⬡ Perplexity ON":"○ Perplexity OFF"}</span>
-            <span style={{color:T.blue}}>engine: {effectiveMode}</span>
-          </>}
-        </div>
-      </div>
-
-      <Ticker/>
-
-      {/* Config notice */}
-      {cfg && !cfg.has_anthropic && (
-        <div style={{margin:"10px 14px 0"}}>
-          <div className="ha-notice">
-            ⚙ <strong>Setup richiesto:</strong> vai in <strong>Impostazioni → Add-on → Gold Intelligence → Configurazione</strong> e inserisci la <code>anthropic_api_key</code>.
-            La Perplexity key è opzionale — se assente usa Claude + web search nativo.
-          </div>
-        </div>
-      )}
-
-      {/* Main grid */}
-      <div style={{display:"grid",gridTemplateColumns:"210px 1fr 240px",gap:10,padding:"10px 14px"}}>
-
-        {/* Left */}
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <Panel>
-            <Hdr icon={<Dot color={T.green}/>} label="Pipeline"/>
-            <Pipeline steps={steps} cur={step}/>
-          </Panel>
-          <Panel>
-            <Hdr icon={<Dot color={T.gold}/>} label="Smart Money Score"/>
-            <Ring score={(scoreD||live).score}/>
-          </Panel>
-          <Panel>
-            <Hdr icon="⊞" label="Score Breakdown"/>
-            <div style={{padding:"10px 14px"}}>
-              {(scoreD||live).breakdown.map((b,i)=><Bar key={i} item={b}/>)}
-              <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",fontSize:11}}>
-                <span style={{color:T.dim}}>TOTAL</span>
-                <span style={{fontWeight:700,fontSize:15,color:(scoreD||live).score>0?T.green:(scoreD||live).score<0?T.red:T.gold}}>
-                  {(scoreD||live).score>0?"+":""}{(scoreD||live).score}
-                </span>
-              </div>
-              <div style={{marginTop:7,fontSize:9,color:T.muted,lineHeight:1.8}}>
-                {Math.abs((scoreD||live).score)>THRESHOLD?"⚡ Sopra soglia → LLM attivato":"⊘ Noise zone → LLM skipped"}
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        {/* Center */}
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <Panel>
-            <Hdr icon="⊞" label="Market Data"/>
-            <div style={{padding:"14px 18px"}}>
-              <div className="g2" style={{gap:"0 28px"}}>
-                <Slider label="ETF FLOWS 7D (M USD)" min={-1000} max={1000} step={50} value={etf} onChange={setEtf} fmt={v=>(v>0?"+":"")+v.toFixed(0)}/>
-                <Slider label="COT NET POSITIONING"  min={-300000} max={300000} step={5000} value={cot} onChange={setCot} fmt={v=>(v>0?"+":"")+Math.round(v/1000)+"K"}/>
-                <Slider label="REAL YIELDS Δ7D"      min={-2} max={2} step={0.1} value={ry} onChange={setRy} fmt={v=>(v>0?"+":"")+v.toFixed(1)} unit="%"/>
-              </div>
-              <div className="g3" style={{marginTop:4}}>
-                {[
-                  {l:"USD TREND",   v:usd,   s:setUsd,   o:[["down","↓ Weak"],["up","↑ Strong"],["flat","→ Flat"]]},
-                  {l:"GOLD TREND",  v:gt,    s:setGt,    o:[["up","↑ Up"],["down","↓ Down"],["sideways","→ Side"]]},
-                  {l:"MACRO EVENT", v:macro, s:setMacro, o:[["Fed hold expected","Fed Hold"],["Fed cut expected","Fed Cut"],["Fed hike expected","Fed Hike"],["CPI above consensus","CPI Hot"],["CPI below consensus","CPI Cool"],["Risk-off geopolitical","Geo Risk"],["Strong NFP data","NFP+"],["Recession signals","Recession"]]},
-                ].map(({l,v,s,o})=>(
-                  <div key={l}>
-                    <div style={{fontSize:8.5,color:T.dim,letterSpacing:".08em",marginBottom:5}}>{l}</div>
-                    <select value={v} onChange={e=>s(e.target.value)}>{o.map(([val,lbl])=><option key={val} value={val}>{lbl}</option>)}</select>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginTop:14}}>
-                <button className="run-btn" onClick={run} disabled={loading||!cfg?.has_anthropic}>
-                  {loading?"⟳  ANALISI IN CORSO…":!cfg?.has_anthropic?"⚠  CONFIGURA API KEY":"▶  ANALIZZA"}
-                </button>
-              </div>
-            </div>
-          </Panel>
-
-          {signals.length>0 &&
-            <div className="fade-up">
-              <Panel>
-                <Hdr icon="⊙" label="Signals estratti"/>
-                <div style={{padding:"10px 14px",display:"flex",flexDirection:"column",gap:4}}>
-                  {signals.map((s,i)=>(
-                    <div key={i} style={{fontSize:10.5,color:T.dim,fontFamily:SANS,lineHeight:1.6,display:"flex",gap:8}}>
-                      <span style={{color:T.gold,flexShrink:0,marginTop:1}}>▸</span>{s}
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-            </div>}
-
-          <ResultPanel result={result} mode={usedMode}/>
-
-          {result?._skipped &&
-            <div style={{padding:"10px 14px",background:T.panel,border:`1px solid ${T.border}`,borderRadius:4,fontSize:10.5,color:T.muted,lineHeight:1.8}}>
-              ⚡ Score nel noise zone — LLM skipped. Muovi i parametri oltre la soglia ±{THRESHOLD} per attivare l'analisi AI.
-            </div>}
-          {error &&
-            <div style={{padding:"10px 14px",background:T.red+"10",border:`1px solid ${T.red}44`,borderRadius:4,fontSize:10.5,color:T.red}}>⚠ {error}</div>}
-        </div>
-
-        {/* Right */}
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <Panel>
-            <Hdr icon={<Dot color={T.green}/>} label="Execution Log"/>
-            <div style={{padding:"8px 12px",minHeight:110,fontFamily:MONO,fontSize:9.5,color:T.dim,lineHeight:2}}>
-              {logs.length===0
-                ? <span style={{color:T.muted}}>In attesa…</span>
-                : logs.map((l,i)=>(
-                    <div key={i} style={{color:l.includes("✓")?T.green:l.includes("✗")?T.red:l.includes("⬡")||l.includes("⚡")?T.gold:T.dim}}>{l}</div>
-                  ))}
-            </div>
-          </Panel>
-
-          <Panel>
-            <Hdr icon="◎" label="Engine Config"/>
-            <div style={{padding:"12px 14px",fontSize:9,color:T.dim,lineHeight:1.9}}>
-              {cfg ? <>
-                <div>Anthropic: <span style={{color:cfg.has_anthropic?T.green:T.red}}>{cfg.has_anthropic?"✓ OK":"✗ mancante"}</span></div>
-                <div>Perplexity: <span style={{color:cfg.has_perplexity?"#A78BFA":T.muted}}>{cfg.has_perplexity?"✓ attivo":"○ non configurato"}</span></div>
-                <div>Mode: <span style={{color:T.gold}}>{effectiveMode}</span></div>
-                <div>Soglia: <span style={{color:T.text}}>±{cfg.score_threshold}</span></div>
-              </> : <span style={{color:T.muted}}>Caricamento config…</span>}
-              <div style={{marginTop:10,padding:"8px 10px",background:T.bg,borderRadius:3,lineHeight:2}}>
-                ✓ Configurazione da HA Supervisor<br/>
-                ✓ API key mai esposte al browser<br/>
-                ✓ Fallback automatico<br/>
-                ✓ LLM solo se |score| &gt; soglia
-              </div>
-            </div>
-          </Panel>
-
-          {result && !result._skipped &&
-            <div className="fade-up">
-              <Panel>
-                <Hdr icon="{}" label="JSON Output"/>
-                <pre style={{padding:"10px 12px",fontSize:8.5,lineHeight:1.7,color:T.dim,overflow:"auto",maxHeight:250,fontFamily:MONO}}>
-                  {JSON.stringify({score:(scoreD||live).score,engine:usedMode,analysis:result},null,2)}
-                </pre>
-              </Panel>
-            </div>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const sl = ms => new Promise(r=>setTimeout(r,ms));
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
