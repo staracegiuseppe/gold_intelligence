@@ -6,259 +6,466 @@
 <title>Gold Intelligence</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#07090D;color:#D0DFF8;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+html,body{height:100%;background:#07090D;color:#D0DFF8;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0B0E16}::-webkit-scrollbar-thumb{background:#253050;border-radius:2px}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-@keyframes glow{0%,100%{text-shadow:0 0 8px #C8A02066}50%{text-shadow:0 0 20px #C8A020cc}}
 .app{display:flex;flex-direction:column;min-height:100vh}
-.header{background:#0B0E16;border-bottom:1px solid #192030;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.ticker-bar{height:26px;background:#0B0E16;border-bottom:1px solid #192030;overflow:hidden;white-space:nowrap;display:flex;align-items:center}
-.ticker-track{display:inline-flex;animation:ticker 50s linear infinite;font-size:10px;color:#6880A0;letter-spacing:.04em}
-.main{display:grid;grid-template-columns:260px 1fr 280px;gap:12px;padding:12px 16px;flex:1}
-.panel{background:#0B0E16;border:1px solid #192030;border-radius:6px;overflow:hidden}
-.ph{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid #192030;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#6880A0;font-weight:600}
-.pb{padding:14px}
+.hdr{background:#0B0E16;border-bottom:1px solid #192030;padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tabs{display:flex;gap:0;background:#07090D;border-bottom:1px solid #192030;flex-shrink:0}
+.tab{padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:.08em;cursor:pointer;border-bottom:2px solid transparent;color:#6880A0;transition:all .2s;text-transform:uppercase}
+.tab.active{color:#C8A020;border-bottom-color:#C8A020;background:#0B0E16}
+.tab:hover:not(.active){color:#D0DFF8}
+.tab-content{display:none;flex:1;overflow-y:auto}
+.tab-content.active{display:block}
+/* panels */
+.panel{background:#0B0E16;border:1px solid #192030;border-radius:6px;overflow:hidden;margin-bottom:12px}
+.ph{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #192030;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#6880A0;font-weight:600}
+.pb{padding:12px 14px}
 .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .dot-g{background:#18B85A;animation:pulse 1.8s infinite}
 .dot-y{background:#C8A020;animation:pulse 2.2s infinite}
-.score-hero{text-align:center;padding:20px 14px}
-.score-ring-wrap{position:relative;width:160px;height:160px;margin:0 auto 12px}
-.score-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.score-val{font-size:38px;font-weight:700;line-height:1;font-family:'Courier New',monospace;animation:glow 3s infinite}
-.score-lbl{font-size:9px;color:#6880A0;letter-spacing:.12em;margin-top:4px}
-.score-tag{display:inline-block;padding:4px 14px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.1em;margin-top:8px}
-.factor-row{margin-bottom:10px}
-.factor-hdr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;color:#6880A0}
-.factor-hdr span:last-child{font-weight:700}
-.factor-track{height:4px;background:#192030;border-radius:2px;overflow:hidden}
-.factor-bar{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
-.input-group{margin-bottom:14px}
-.input-label{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:#6880A0;letter-spacing:.06em}
-.input-label span:last-child{color:#C8A020;font-weight:600;font-family:'Courier New',monospace}
+/* inputs */
+.inp-lbl{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:#6880A0}
+.inp-lbl span:last-child{color:#C8A020;font-weight:700;font-family:monospace}
 input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:#192030;outline:none;cursor:pointer;border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#C8A020;cursor:pointer;box-shadow:0 0 8px #C8A02066}
-select{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none;width:100%;cursor:pointer;font-family:inherit}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#C8A020;cursor:pointer}
+select{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none;width:100%;cursor:pointer}
 select:focus{border-color:#C8A02066}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.run-btn{width:100%;padding:12px;background:linear-gradient(135deg,#7A5C0A,#C8A020);color:#07090D;border:none;border-radius:5px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-.run-btn:hover:not(:disabled){background:linear-gradient(135deg,#C8A020,#E6BB3A);box-shadow:0 0 28px #C8A02055}
-.run-btn:disabled{background:#253050;color:#6880A0;cursor:not-allowed}
-.spinner{width:14px;height:14px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.spinner.visible{display:block}
-.signal-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #19203022;font-size:11px;color:#7A90B0;line-height:1.5}
-.signal-item:last-child{border-bottom:none}
-.result-card{animation:fadeIn .4s ease;display:none}
-.result-card.visible{display:block}
-.bias-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.bias-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:3px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
-.conf-bar-wrap{flex:1;height:5px;background:#192030;border-radius:3px;overflow:hidden}
-.conf-bar{height:100%;border-radius:3px;transition:width 1s ease}
-.conf-val{font-size:20px;font-weight:700;font-family:'Courier New',monospace}
-.vbadge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.08em;margin-right:6px;margin-bottom:6px}
-.summary-text{font-size:12px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:12px;margin:12px 0}
-.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
-.col-title{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.col-item{font-size:10px;color:#7A90B0;margin-bottom:4px;line-height:1.5;display:flex;gap:4px}
-.log-area{font-family:'Courier New',monospace;font-size:10px;line-height:1.9;padding:10px 12px;min-height:100px;color:#6880A0;max-height:160px;overflow-y:auto}
-.log-line.ok{color:#18B85A}.log-line.err{color:#E03838}.log-line.ai{color:#C8A020}.log-line.web{color:#2E7FE8}
-.pipe-row{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #19203022}
+/* buttons */
+.btn-run{width:100%;padding:12px;background:linear-gradient(135deg,#7A5C0A,#C8A020);color:#07090D;border:none;border-radius:5px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.btn-run:hover:not(:disabled){box-shadow:0 0 24px #C8A02055}
+.btn-run:disabled{background:#253050;color:#6880A0;cursor:not-allowed}
+.btn-sm{padding:5px 12px;background:transparent;color:#C8A020;border:1px solid #C8A02055;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.06em}
+.btn-sm:hover{background:#C8A02018}
+/* spinner */
+.spin{width:13px;height:13px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.spin.on{display:block}
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.b-bull{background:#18B85A18;color:#18B85A;border:1px solid #18B85A44}
+.b-bear{background:#E0383818;color:#E03838;border:1px solid #E0383844}
+.b-neut{background:#C8A02018;color:#C8A020;border:1px solid #C8A02044}
+.b-ok{background:#18B85A18;color:#18B85A;border:1px solid #18B85A33}
+.b-no{background:#E0383818;color:#E03838;border:1px solid #E0383833}
+/* score ring */
+.ring-wrap{position:relative;width:140px;height:140px;margin:0 auto 10px}
+.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.ring-val{font-size:32px;font-weight:700;font-family:monospace;line-height:1}
+/* factor bars */
+.fbar-row{margin-bottom:8px}
+.fbar-hdr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;color:#6880A0}
+.fbar-hdr b{font-weight:700}
+.fbar-track{height:4px;background:#192030;border-radius:2px}
+.fbar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+/* asset cards */
+.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px}
+.asset-card{background:#07090D;border:1px solid #192030;border-radius:6px;padding:12px;cursor:pointer;transition:all .2s;animation:fadeIn .3s ease}
+.asset-card:hover{border-color:#C8A02066;background:#0B0E16}
+.asset-card.bull{border-left:3px solid #18B85A}
+.asset-card.bear{border-left:3px solid #E03838}
+.asset-card.neut{border-left:3px solid #C8A020}
+/* signal items */
+.sig-item{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #19203022;font-size:11px;color:#7A90B0;line-height:1.5}
+.sig-item:last-child{border-bottom:none}
+/* result */
+.res-card{animation:fadeIn .4s ease}
+.summary-box{font-size:12px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:12px;margin:12px 0}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
+.three-title{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.three-item{font-size:10px;color:#7A90B0;margin-bottom:4px;line-height:1.5;display:flex;gap:4px}
+/* log */
+.log-box{font-family:monospace;font-size:10px;line-height:1.9;padding:10px 12px;min-height:80px;max-height:180px;overflow-y:auto;color:#6880A0}
+.log-ok{color:#18B85A}.log-err{color:#E03838}.log-ai{color:#C8A020}.log-web{color:#2E7FE8}
+/* ticker */
+.tick-bar{height:26px;background:#0B0E16;border-bottom:1px solid #192030;overflow:hidden;white-space:nowrap;display:flex;align-items:center}
+.tick-track{display:inline-flex;animation:ticker 50s linear infinite;font-size:10px;color:#6880A0}
+/* grid layouts */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* progress */
+.pipe-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #19203022}
 .pipe-row:last-child{border-bottom:none}
-.pipe-num{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
-.pn-idle{background:#192030;color:#6880A0}.pn-active{background:#C8A02033;color:#C8A020;border:1px solid #C8A02055}.pn-done{background:#18B85A22;color:#18B85A;border:1px solid #18B85A44}
-.pipe-spin{width:10px;height:10px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;margin-top:4px}
-.key-status{display:flex;align-items:center;gap:5px;font-size:10px;padding:3px 8px;border-radius:3px}
-.key-ok{background:#18B85A18;color:#18B85A;border:1px solid #18B85A33}
-.key-no{background:#E0383818;color:#E03838;border:1px solid #E0383833}
+.pnum{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.pn-i{background:#192030;color:#6880A0}.pn-a{background:#C8A02033;color:#C8A020;border:1px solid #C8A02055}.pn-d{background:#18B85A22;color:#18B85A;border:1px solid #18B85A44}
+/* error box */
+.err-box{padding:10px 14px;background:#E0383810;border:1px solid #E0383844;border-radius:4px;font-size:11px;color:#E03838;line-height:1.7}
+/* countdown */
+.countdown{font-size:11px;color:#6880A0;font-family:monospace}
+/* detail panel */
+.detail-overlay{display:none;position:fixed;inset:0;background:#07090Dcc;z-index:100;overflow-y:auto}
+.detail-overlay.open{display:block}
+.detail-box{background:#0B0E16;border:1px solid #192030;border-radius:8px;max-width:700px;margin:40px auto;padding:0;animation:fadeIn .3s ease}
 </style>
 </head>
 <body>
 <div class="app">
-<div class="header">
+
+<!-- HEADER -->
+<div class="hdr">
   <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:30px;height:30px;border-radius:5px;background:linear-gradient(135deg,#7A5C0A,#C8A020);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#07090D">◈</div>
+    <div style="width:28px;height:28px;border-radius:5px;background:linear-gradient(135deg,#7A5C0A,#C8A020);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#07090D">◈</div>
     <div>
-      <div style="font-size:14px;font-weight:700;color:#C8A020;letter-spacing:.04em">GOLD INTELLIGENCE</div>
-      <div style="font-size:9px;color:#6880A0;letter-spacing:.1em">XAU/USD · SMART MONEY · CLAUDE AI · HOME ASSISTANT</div>
+      <div style="font-size:13px;font-weight:700;color:#C8A020;letter-spacing:.04em">GOLD INTELLIGENCE</div>
+      <div style="font-size:8px;color:#6880A0;letter-spacing:.1em">SMART MONEY · CLAUDE AI · HOME ASSISTANT</div>
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center">
-    <div class="key-status key-no" id="anthropic-badge">● Claude non configurato</div>
-    <div id="engine-badge" style="font-size:10px;color:#6880A0">caricamento...</div>
+    <span class="badge b-no" id="hdr-key-badge">● No API Key</span>
+    <span style="font-size:10px;color:#6880A0" id="hdr-engine">caricamento...</span>
   </div>
 </div>
-<div class="ticker-bar">
-  <div class="ticker-track">
-    <span style="margin-right:60px">◈&nbsp;&nbsp;XAU/USD · Gold Intelligence · Quant + Claude AI</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Smart Money Score: ETF + COT + Yields + USD + Trend</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;LLM attivato solo se |score| &gt; soglia · Cache 60min</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fallback automatico Claude + web_search</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;XAU/USD · Gold Intelligence · Quant + Claude AI</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Smart Money Score: ETF + COT + Yields + USD + Trend</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;LLM attivato solo se |score| &gt; soglia · Cache 60min</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fallback automatico Claude + web_search</span>
+
+<!-- TICKER -->
+<div class="tick-bar">
+  <div class="tick-track">
+    <span style="margin-right:60px">◈&nbsp;&nbsp;Gold Intelligence v2 · Smart Money Score + Claude AI · Analisi Oraria ETF/Azioni</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fattori: ETF Flows (30pt) · COT (25pt) · Real Yields (20pt) · USD (15pt) · Trend (10pt)</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;Scheduler orario attivo · 10 asset monitorati · LLM solo su segnali forti</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;Gold Intelligence v2 · Smart Money Score + Claude AI · Analisi Oraria ETF/Azioni</span>
+    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fattori: ETF Flows (30pt) · COT (25pt) · Real Yields (20pt) · USD (15pt) · Trend (10pt)</span>
+    <span style="margin-right:60px">◈&nbsp;&nbsp;Scheduler orario attivo · 10 asset monitorati · LLM solo su segnali forti</span>
   </div>
 </div>
-<div class="main">
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('gold')">◈ Analisi Oro</div>
+  <div class="tab" onclick="showTab('scanner')">⊕ Scanner ETF/Azioni</div>
+  <div class="tab" onclick="showTab('scheduler')">⏱ Scheduler Orario</div>
+  <div class="tab" onclick="showTab('settings')">⚙ Impostazioni</div>
+</div>
+
+<!-- ═══════════════ TAB 1: ANALISI ORO ═══════════════ -->
+<div class="tab-content active" id="tab-gold">
+<div style="display:grid;grid-template-columns:240px 1fr 260px;gap:12px;padding:12px 16px">
+
   <!-- LEFT -->
-  <div style="display:flex;flex-direction:column;gap:12px">
+  <div>
     <div class="panel">
       <div class="ph"><div class="dot dot-y"></div>Smart Money Score</div>
-      <div class="score-hero">
-        <div class="score-ring-wrap">
-          <svg viewBox="0 0 160 160" width="160" height="160">
-            <circle cx="80" cy="80" r="66" fill="none" stroke="#192030" stroke-width="10" stroke-dasharray="311 415" stroke-dashoffset="-52" stroke-linecap="round"/>
-            <circle cx="80" cy="80" r="66" fill="none" id="score-arc" stroke="#C8A020" stroke-width="10" stroke-dasharray="0 415" stroke-dashoffset="-52" stroke-linecap="round" style="transition:stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1),stroke .5s"/>
+      <div style="text-align:center;padding:16px 14px">
+        <div class="ring-wrap" id="ring-wrap">
+          <svg id="ring-svg" viewBox="0 0 140 140" width="140" height="140">
+            <circle cx="70" cy="70" r="58" fill="none" stroke="#192030" stroke-width="9"
+              stroke-dasharray="273 365" stroke-dashoffset="-46" stroke-linecap="round"/>
+            <circle cx="70" cy="70" r="58" fill="none" id="ring-arc"
+              stroke="#C8A020" stroke-width="9"
+              stroke-dasharray="0 365" stroke-dashoffset="-46" stroke-linecap="round"
+              style="transition:stroke-dasharray 1s ease,stroke .4s"/>
           </svg>
-          <div class="score-center">
-            <div class="score-val" id="score-val" style="color:#C8A020">+0</div>
-            <div class="score-lbl">/ 100</div>
+          <div class="ring-center">
+            <div class="ring-val" id="ring-val" style="color:#C8A020">0</div>
+            <div style="font-size:8px;color:#6880A0;margin-top:2px;letter-spacing:.1em">/100</div>
           </div>
         </div>
-        <div class="score-tag" id="score-tag" style="background:#C8A02018;color:#C8A020;border:1px solid #C8A02044">NEUTRALE</div>
-        <div style="margin-top:10px;font-size:10px;color:#6880A0" id="threshold-note">⊘ Imposta parametri per iniziare</div>
+        <div class="badge b-neut" id="ring-tag">NEUTRALE</div>
+        <div style="margin-top:8px;font-size:10px;color:#6880A0" id="ring-note">Imposta parametri</div>
       </div>
     </div>
     <div class="panel">
-      <div class="ph"><span style="color:#6880A0">⊞</span>Fattori Smart Money</div>
-      <div class="pb" id="factors-panel"></div>
+      <div class="ph">⊞ Fattori</div>
+      <div class="pb" id="factors-panel"><div style="color:#6880A044;font-size:11px">Muovi gli slider...</div></div>
     </div>
     <div class="panel">
       <div class="ph"><div class="dot dot-g"></div>Pipeline</div>
       <div id="pipeline-panel" style="padding:8px 14px"></div>
     </div>
   </div>
+
   <!-- CENTER -->
-  <div style="display:flex;flex-direction:column;gap:12px">
+  <div>
+    <!-- Chart -->
     <div class="panel">
-      <div class="ph"><span style="color:#C8A020">◈</span>XAU/USD — Andamento Simulato (7gg) + Score</div>
-      <div style="padding:10px 14px"><canvas id="priceChart" height="130"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="ph"><span style="color:#2E7FE8">⊞</span>Parametri di Mercato</div>
-      <div class="pb">
-        <div class="grid2">
-          <div class="input-group">
-            <div class="input-label"><span>ETF FLOWS 7D (M USD)</span><span id="v-etf">+450</span></div>
-            <input type="range" id="r-etf" min="-1000" max="1000" step="50" value="450" oninput="onSlider()">
-          </div>
-          <div class="input-group">
-            <div class="input-label"><span>COT NET POSITIONING</span><span id="v-cot">+145K</span></div>
-            <input type="range" id="r-cot" min="-300000" max="300000" step="5000" value="145000" oninput="onSlider()">
-          </div>
-          <div class="input-group">
-            <div class="input-label"><span>REAL YIELDS Δ7D</span><span id="v-ry">-0.3%</span></div>
-            <input type="range" id="r-ry" min="-2" max="2" step="0.1" value="-0.3" oninput="onSlider()">
-          </div>
-        </div>
-        <div class="grid3" style="margin-top:4px">
-          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">USD TREND</div>
-            <select id="s-usd" onchange="onSlider()"><option value="down">↓ Weakening</option><option value="up">↑ Strengthening</option><option value="flat">→ Flat</option></select></div>
-          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">GOLD TREND</div>
-            <select id="s-gt" onchange="onSlider()"><option value="up">↑ Uptrend</option><option value="down">↓ Downtrend</option><option value="sideways">→ Sideways</option></select></div>
-          <div><div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">MACRO EVENT</div>
-            <select id="s-macro" onchange="onSlider()">
-              <option>Fed hold expected</option><option>Fed cut expected</option><option>Fed hike expected</option>
-              <option>CPI above consensus</option><option>CPI below consensus</option>
-              <option>Risk-off geopolitical</option><option>Strong NFP data</option><option>Recession signals</option>
-            </select></div>
-        </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #192030;display:flex;gap:8px;align-items:center">
-          <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;white-space:nowrap">ENGINE</div>
-          <select id="s-mode" style="flex:1"><option value="auto">Auto (da config addon)</option><option value="claude">Claude + Web Search</option><option value="dual">Perplexity + Claude</option></select>
-        </div>
-        <div style="margin-top:14px">
-          <button class="run-btn" id="run-btn" onclick="runAnalysis()">
-            <div class="spinner" id="btn-spinner"></div>
-            <span id="btn-label">▶ ANALIZZA CON AI</span>
-          </button>
-        </div>
-        <div id="no-key-warn" style="margin-top:8px;font-size:10px;color:#E03838;display:none">⚠ API key mancante — configura l'addon in HA Settings</div>
+      <div class="ph"><span style="color:#C8A020">◈</span>XAU/USD Simulato · 7 giorni</div>
+      <div style="padding:10px 14px 6px">
+        <canvas id="price-chart"></canvas>
       </div>
     </div>
+    <!-- Inputs -->
     <div class="panel">
-      <div class="ph"><span style="color:#2E7FE8">⊙</span>Segnali Estratti → Input AI</div>
-      <div id="signals-list" style="padding:8px 14px"></div>
-    </div>
-    <div class="panel result-card" id="result-card">
-      <div class="ph"><div class="dot dot-y"></div>Claude AI — Analisi Validata<span id="result-engine-badge" style="margin-left:4px;font-size:9px;color:#7A5C0A"></span><span style="margin-left:auto;font-size:9px;color:#18B85A">● LIVE</span></div>
+      <div class="ph">⊞ Parametri</div>
       <div class="pb">
-        <div class="bias-row">
-          <div class="bias-badge" id="bias-badge">→ NEUTRALE</div>
-          <div class="conf-bar-wrap"><div class="conf-bar" id="conf-bar" style="width:0%;background:#C8A020"></div></div>
-          <div class="conf-val" id="conf-val" style="color:#C8A020">0%</div>
+        <div class="g2">
+          <div style="margin-bottom:14px">
+            <div class="inp-lbl"><span>ETF FLOWS 7D (M USD)</span><span id="v-etf">+450</span></div>
+            <input type="range" id="r-etf" min="-1000" max="1000" step="50" value="450">
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="inp-lbl"><span>COT NET POSITIONING</span><span id="v-cot">+145K</span></div>
+            <input type="range" id="r-cot" min="-300000" max="300000" step="5000" value="145000">
+          </div>
+          <div style="margin-bottom:14px">
+            <div class="inp-lbl"><span>REAL YIELDS Δ7D</span><span id="v-ry">-0.3%</span></div>
+            <input type="range" id="r-ry" min="-2" max="2" step="0.1" value="-0.3">
+          </div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;margin-bottom:10px">
-          <span class="vbadge" id="val-badge">⚡ MISTO</span>
-          <span class="vbadge" id="conv-badge" style="background:#19203044;color:#6880A0;border:1px solid #19203088">CONVERGENZA —</span>
-          <span class="vbadge" id="horizon-badge" style="background:#19203044;color:#6880A0;border:1px solid #19203088">—</span>
+        <div class="g3" style="margin-bottom:12px">
+          <div>
+            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">USD TREND</div>
+            <select id="s-usd"><option value="down">↓ Weak</option><option value="up">↑ Strong</option><option value="flat">→ Flat</option></select>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">GOLD TREND</div>
+            <select id="s-gt"><option value="up">↑ Up</option><option value="down">↓ Down</option><option value="sideways">→ Sideways</option></select>
+          </div>
+          <div>
+            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">MACRO EVENT</div>
+            <select id="s-macro">
+              <option>Fed hold expected</option><option>Fed cut expected</option>
+              <option>Fed hike expected</option><option>CPI above consensus</option>
+              <option>CPI below consensus</option><option>Risk-off geopolitical</option>
+              <option>Strong NFP data</option><option>Recession signals</option>
+            </select>
+          </div>
         </div>
-        <div class="summary-text" id="summary-text">—</div>
-        <div id="findings-section" style="display:none;margin-top:10px">
-          <div style="font-size:9px;color:#2E7FE8;letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px">🔍 WEB FINDINGS</div>
-          <div id="findings-list"></div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;padding-top:10px;border-top:1px solid #192030">
+          <div style="font-size:9px;color:#6880A0;white-space:nowrap">ENGINE</div>
+          <select id="s-mode"><option value="auto">Auto (da config)</option><option value="claude">Claude + Web</option><option value="dual">Perplexity + Claude</option></select>
         </div>
-        <div class="three-col">
-          <div><div class="col-title" style="color:#18B85A">DRIVERS</div><div id="drivers-list"></div></div>
-          <div><div class="col-title" style="color:#E03838">RISCHI</div><div id="risks-list"></div></div>
-          <div><div class="col-title" style="color:#C8A020">CONFLITTI</div><div id="conflicts-list"></div></div>
+        <button class="btn-run" id="run-btn" onclick="doAnalyze()">
+          <div class="spin" id="btn-spin"></div>
+          <span id="btn-lbl">▶ ANALIZZA CON AI</span>
+        </button>
+        <div id="key-warn" style="display:none;margin-top:8px;font-size:10px;color:#E03838">⚠ Configura anthropic_api_key nelle impostazioni addon</div>
+      </div>
+    </div>
+    <!-- Signals -->
+    <div class="panel">
+      <div class="ph">⊙ Segnali Estratti</div>
+      <div id="signals-list" style="padding:8px 14px"><div style="color:#6880A044;font-size:11px">Muovi gli slider per vedere i segnali...</div></div>
+    </div>
+    <!-- Result -->
+    <div class="panel res-card" id="result-card" style="display:none">
+      <div class="ph"><div class="dot dot-y"></div>Analisi Claude AI<span id="res-engine" style="margin-left:4px;font-size:9px;color:#7A5C0A"></span><span style="margin-left:auto;font-size:9px;color:#18B85A">● LIVE</span></div>
+      <div class="pb">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span class="badge" id="res-bias">→ NEUTRALE</span>
+          <div style="flex:1;height:5px;background:#192030;border-radius:3px"><div id="res-conf-bar" style="height:100%;border-radius:3px;transition:width 1s;background:#C8A020;width:0%"></div></div>
+          <span id="res-conf-val" style="font-size:18px;font-weight:700;font-family:monospace;color:#C8A020">0%</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          <span class="badge" id="res-val-badge">⚡ MISTO</span>
+          <span class="badge b-neut" id="res-conv-badge">CONV —</span>
+          <span class="badge b-neut" id="res-horizon-badge">—</span>
+        </div>
+        <div class="summary-box" id="res-summary">—</div>
+        <div id="res-findings" style="display:none;margin-bottom:10px">
+          <div style="font-size:9px;color:#2E7FE8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">🔍 Web Findings</div>
+          <div id="res-findings-list"></div>
+        </div>
+        <div class="three">
+          <div><div class="three-title" style="color:#18B85A">Drivers</div><div id="res-drivers"></div></div>
+          <div><div class="three-title" style="color:#E03838">Rischi</div><div id="res-risks"></div></div>
+          <div><div class="three-title" style="color:#C8A020">Conflitti</div><div id="res-conflicts"></div></div>
         </div>
       </div>
     </div>
-    <div id="noise-msg" style="display:none;padding:12px 14px;background:#0B0E16;border:1px solid #192030;border-radius:6px;font-size:11px;color:#6880A0;line-height:1.8">⚡ Score sotto soglia — nessun segnale forte. Muovi i parametri oltre ±30 per attivare l'AI.</div>
+    <div id="noise-msg" style="display:none;padding:10px 14px;background:#0B0E16;border:1px solid #192030;border-radius:6px;font-size:11px;color:#6880A0">⚡ Score sotto soglia — muovi i parametri oltre ±30 per attivare l'AI.</div>
+    <div class="err-box" id="err-box" style="display:none"></div>
   </div>
+
   <!-- RIGHT -->
-  <div style="display:flex;flex-direction:column;gap:12px">
+  <div>
     <div class="panel">
-      <div class="ph"><span style="color:#C8A020">◈</span>Radar Fattori</div>
-      <div style="padding:16px 14px"><canvas id="radarChart" height="190"></canvas></div>
+      <div class="ph">◈ Radar Fattori</div>
+      <div style="padding:12px 14px"><canvas id="radar-chart"></canvas></div>
     </div>
     <div class="panel">
-      <div class="ph"><div class="dot dot-g"></div>Execution Log</div>
-      <div class="log-area" id="log-area"><div style="color:#6880A0">In attesa di analisi...</div></div>
+      <div class="ph"><div class="dot dot-g"></div>Log Esecuzione</div>
+      <div class="log-box" id="log-box"><div style="color:#6880A044">In attesa...</div></div>
     </div>
     <div class="panel" id="json-panel" style="display:none">
-      <div class="ph"><span style="color:#6880A0">{}</span>Output JSON</div>
-      <pre id="json-out" style="padding:10px 12px;font-size:9px;line-height:1.7;color:#6880A0;overflow:auto;max-height:200px;font-family:'Courier New',monospace"></pre>
+      <div class="ph">{} Output JSON</div>
+      <pre id="json-out" style="padding:10px 12px;font-size:9px;line-height:1.7;color:#6880A0;overflow:auto;max-height:200px;font-family:monospace"></pre>
     </div>
     <div class="panel">
-      <div class="ph"><span style="color:#6880A0">◎</span>Come Funziona</div>
-      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2">
-        <div><span style="color:#C8A020">⊕</span> Calcola Smart Money Score dai parametri</div>
-        <div><span style="color:#2E7FE8">🔍</span> Se |score| &gt; 30 attiva l'AI</div>
-        <div><span style="color:#8B5CF6">⬡</span> Perplexity cerca news macro reali</div>
-        <div><span style="color:#C8A020">◈</span> Claude valida e sintetizza</div>
-        <div><span style="color:#18B85A">✓</span> Output: bias + confidence + drivers</div>
-        <div style="margin-top:8px;padding:8px 10px;background:#07090D;border-radius:4px;line-height:2">
-          <span style="color:#C8A020">Pesi score:</span><br>
-          ETF Flows &nbsp;→ max 30 pt<br>
-          COT &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ 25 pt<br>
-          Real Yields → 20 pt<br>
-          USD Trend &nbsp;→ 15 pt<br>
-          Gold Trend &nbsp;→ 10 pt
+      <div class="ph">◎ Pesi Score</div>
+      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2.1">
+        <div>ETF Flows <span style="float:right;color:#C8A020">max 30 pt</span></div>
+        <div>COT Positioning <span style="float:right;color:#C8A020">25 pt</span></div>
+        <div>Real Yields <span style="float:right;color:#C8A020">20 pt</span></div>
+        <div>USD Trend <span style="float:right;color:#C8A020">15 pt</span></div>
+        <div>Gold Trend <span style="float:right;color:#C8A020">10 pt</span></div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #192030">
+          LLM attivato se |score| &gt; soglia<br>
+          <span style="color:#C8A020" id="info-threshold">soglia: ±30</span>
         </div>
       </div>
     </div>
   </div>
 </div>
 </div>
+
+<!-- ═══════════════ TAB 2: SCANNER ═══════════════ -->
+<div class="tab-content" id="tab-scanner">
+<div style="padding:14px 16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div>
+      <div style="font-size:14px;font-weight:600;color:#D0DFF8">Scanner ETF & Azioni</div>
+      <div style="font-size:10px;color:#6880A0;margin-top:2px">Analisi Smart Money Score · ordinati per forza segnale</div>
+    </div>
+    <button class="btn-sm" onclick="loadScanner()">↻ Aggiorna</button>
+  </div>
+  <div id="scanner-loading" style="text-align:center;padding:40px;color:#6880A0;font-size:12px">Caricamento analisi...</div>
+  <div id="scanner-meta" style="display:none;margin-bottom:12px;font-size:10px;color:#6880A0;display:flex;gap:16px;flex-wrap:wrap">
+    <span>Ultimo aggiornamento: <span id="sc-last" style="color:#C8A020">—</span></span>
+    <span>Prossimo: <span id="sc-next" style="color:#C8A020">—</span></span>
+    <span id="sc-running-badge" style="display:none" class="badge b-neut">⟳ In esecuzione...</span>
+  </div>
+  <div class="asset-grid" id="scanner-grid"></div>
+  <div id="scanner-err" class="err-box" style="display:none"></div>
+</div>
+</div>
+
+<!-- ═══════════════ TAB 3: SCHEDULER ═══════════════ -->
+<div class="tab-content" id="tab-scheduler">
+<div style="padding:14px 16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:800px">
+    <div class="panel">
+      <div class="ph"><div class="dot dot-g"></div>Stato Scheduler</div>
+      <div class="pb" style="font-size:11px;line-height:2.1;color:#6880A0">
+        <div>Stato: <span id="sch-status" style="color:#C8A020">—</span></div>
+        <div>Ultimo run: <span id="sch-last" style="color:#D0DFF8">—</span></div>
+        <div>Prossimo run: <span id="sch-next" style="color:#D0DFF8">—</span></div>
+        <div>Asset analizzati: <span id="sch-count" style="color:#C8A020">—</span></div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn-sm" onclick="forceRefresh()">▶ Esegui Ora</button>
+          <button class="btn-sm" onclick="loadScheduler()">↻ Ricarica Stato</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph">◎ Come Funziona</div>
+      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2">
+        <div><span style="color:#C8A020">⊕</span> Analisi ogni <strong style="color:#D0DFF8">60 minuti</strong> automatica</div>
+        <div><span style="color:#2E7FE8">◈</span> 10 asset: ETF oro, indici, azioni tech</div>
+        <div><span style="color:#18B85A">✓</span> Score calcolato per ogni asset</div>
+        <div><span style="color:#C8A020">🤖</span> AI chiamata solo se |score| &gt; soglia</div>
+        <div><span style="color:#6880A0">💾</span> Risultati in memoria · reset al riavvio</div>
+        <div style="margin-top:8px;padding:8px 10px;background:#07090D;border-radius:4px;font-size:9px;line-height:2">
+          Asset monitorati:<br>
+          GLD · IAU · SPY · QQQ · XLE<br>
+          TLT · AAPL · NVDA · MSFT · XOM
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:12px;max-width:800px">
+    <div class="panel">
+      <div class="ph">⊞ Top Opportunità (ultimo run)</div>
+      <div id="sch-top-list" style="padding:8px 14px;color:#6880A044;font-size:11px">Nessun dato — attendi il primo run o clicca "Esegui Ora"</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- ═══════════════ TAB 4: IMPOSTAZIONI ═══════════════ -->
+<div class="tab-content" id="tab-settings">
+<div style="padding:14px 16px;max-width:750px">
+
+  <!-- Email -->
+  <div class="panel">
+    <div class="ph"><span style="color:#C8A020">✉</span>Configurazione Email Report</div>
+    <div class="pb">
+      <div style="font-size:11px;color:#6880A0;line-height:1.8;margin-bottom:14px;padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030">
+        ℹ Le impostazioni email si configurano in <b style="color:#D0DFF8">Home Assistant → Add-on → Gold Intelligence → Configurazione</b>.<br>
+        Qui puoi vedere lo stato attuale e inviare una email di test.
+      </div>
+
+      <div class="g2" style="margin-bottom:16px">
+        <div>
+          <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;margin-bottom:8px">STATO EMAIL</div>
+          <div id="email-status-box" style="padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-size:11px;line-height:2;color:#6880A0">
+            Caricamento...
+          </div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;margin-bottom:8px">CONFIGURAZIONE ATTIVA</div>
+          <div id="email-config-box" style="padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-size:11px;line-height:2;color:#6880A0">
+            Caricamento...
+          </div>
+        </div>
+      </div>
+
+      <!-- Test email button -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="btn-sm" onclick="sendTestEmail()" id="test-email-btn">✉ Invia Email di Test</button>
+        <button class="btn-sm" onclick="loadSettings()">↻ Ricarica Stato</button>
+        <span id="test-email-result" style="font-size:11px;display:none"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduler -->
+  <div class="panel">
+    <div class="ph"><span style="color:#18B85A">⏱</span>Scheduler Automatico</div>
+    <div class="pb">
+      <div id="sched-config-box" style="font-size:11px;color:#6880A0;line-height:2.2">Caricamento...</div>
+    </div>
+  </div>
+
+  <!-- Guide Gmail -->
+  <div class="panel">
+    <div class="ph"><span style="color:#2E7FE8">?</span>Guida: Gmail con App Password</div>
+    <div class="pb" style="font-size:11px;color:#6880A0;line-height:2">
+      <div style="margin-bottom:6px;color:#D0DFF8;font-weight:600">Come configurare Gmail:</div>
+      <div>1. Vai su <b style="color:#2E7FE8">myaccount.google.com → Sicurezza</b></div>
+      <div>2. Abilita <b style="color:#D0DFF8">Verifica in 2 passaggi</b></div>
+      <div>3. Cerca <b style="color:#D0DFF8">Password per le app</b> → crea password per "Mail"</div>
+      <div>4. Usa la password generata (16 caratteri) come <code style="color:#C8A020">smtp_password</code></div>
+      <div style="margin-top:10px;padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-family:monospace;font-size:10px;line-height:2;color:#C8A020">
+        smtp_host: smtp.gmail.com<br>
+        smtp_port: 587<br>
+        smtp_user: tua@gmail.com<br>
+        smtp_password: xxxx xxxx xxxx xxxx<br>
+        smtp_tls: true
+      </div>
+      <div style="margin-top:10px;color:#D0DFF8;font-weight:600">Per altri provider:</div>
+      <div style="font-family:monospace;font-size:10px;margin-top:4px;color:#6880A0">
+        Outlook: smtp-mail.outlook.com:587<br>
+        Yahoo:   smtp.mail.yahoo.com:587<br>
+        iCloud:  smtp.mail.me.com:587
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+</div><!-- /app -->
+
+<!-- DETAIL OVERLAY -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-box">
+    <div class="ph" style="padding:12px 16px">
+      <span id="detail-title" style="font-size:12px;color:#D0DFF8;text-transform:none;letter-spacing:0;font-weight:600"></span>
+      <button onclick="closeDetail()" style="margin-left:auto;background:none;border:none;color:#6880A0;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div class="pb" id="detail-body" style="padding:16px"></div>
+  </div>
+</div>
+
 <script>
-let cfg={has_anthropic:false,has_perplexity:false,engine_mode:'auto',score_threshold:30};
-let loading=false;
-const STEPS=[
-  {l:'Validazione Input',  s:'Normalizza e controlla'},
-  {l:'Smart Money Score',  s:'Calcolo quantitativo'},
-  {l:'Segnali Estratti',   s:'Feature engineering'},
-  {l:'Grounding Web',      s:'Perplexity / web_search'},
-  {l:'Sintesi Claude',     s:'Validazione + JSON'},
-  {l:'Completato',         s:'Risultati pronti'},
-];
-function computeScore(d){
-  let s=0;const b=[];
-  const etf=+d.etf_flows,w=Math.min(30,Math.round(Math.abs(etf)/30));
+// ─── BASE URL: usa percorso relativo per HA Ingress ───────────────────────
+function apiUrl(path) {
+  // Prende il base path dalla finestra (funziona con HA Ingress)
+  const base = window.location.pathname.replace(/\/[^/]*$/, '');
+  return base + path;
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let CFG = {has_anthropic:false, has_perplexity:false, engine_mode:'auto', score_threshold:30};
+let loading = false;
+let chartsReady = false;
+
+// ─── QUANT ENGINE ─────────────────────────────────────────────────────────
+function computeScore(d) {
+  let s=0; const b=[];
+  const etf=+d.etf_flows, w=Math.min(30, Math.round(Math.abs(etf)/30));
   etf>0?(s+=w,b.push({l:'ETF Inflows',v:+w,c:'#18B85A',i:'▲'})):(s-=w,b.push({l:'ETF Outflows',v:-w,c:'#E03838',i:'▼'}));
   const cot=+d.cot_positioning;
   cot>0?(s+=25,b.push({l:'COT Net Long',v:+25,c:'#18B85A',i:'▲'})):(s-=25,b.push({l:'COT Net Short',v:-25,c:'#E03838',i:'▼'}));
@@ -271,91 +478,146 @@ function computeScore(d){
   else if(d.usd_trend==='up'){s-=15;b.push({l:'USD Strong',v:-15,c:'#E03838',i:'▼'})}
   if(d.gold_trend==='up'){s+=10;b.push({l:'Gold ↑Trend',v:+10,c:'#18B85A',i:'▲'})}
   else if(d.gold_trend==='down'){s-=10;b.push({l:'Gold ↓Trend',v:-10,c:'#E03838',i:'▼'})}
-  return{score:Math.max(-100,Math.min(100,Math.round(s))),breakdown:b};
+  return {score:Math.max(-100,Math.min(100,Math.round(s))), breakdown:b};
 }
-function enrichSignals(d){
-  const etf=+d.etf_flows,cot=+d.cot_positioning,ry=+d.real_yields;
-  return[
-    etf>500?`ETF accumulation aggressiva +${etf}M USD`:etf>0?`ETF inflows moderati +${etf}M USD`:etf>-500?`ETF outflows ${etf}M USD`:`Distribuzione ETF pesante ${etf}M USD`,
-    cot>150000?`Hedge funds estremamente long +${(cot/1000).toFixed(0)}K — posizione affollata`:cot>0?`Hedge funds net long +${(cot/1000).toFixed(0)}K`:`Hedge funds net short ${(cot/1000).toFixed(0)}K`,
-    ry<-.5?`Real yields profondamente negativi ${ry}% — forte tailwind oro`:ry<0?`Real yields negativi ${ry}% — supporto moderato`:`Real yields positivi +${ry}% — headwind oro`,
-    {down:'USD in downtrend — bid meccanico sull\'oro',up:'USD in rafforzamento — frena XAU/USD',flat:'USD piatto — fattore FX neutro'}[d.usd_trend]||'',
+
+function enrichSignals(d) {
+  const etf=+d.etf_flows, cot=+d.cot_positioning, ry=+d.real_yields;
+  return [
+    etf>500?`ETF accumulation aggressiva +${etf}M USD — domanda istituzionale forte`:
+    etf>0?`ETF inflows moderati +${etf}M USD`:
+    etf>-500?`ETF outflows ${etf}M USD — riduzione rischio`:
+    `Distribuzione ETF pesante ${etf}M USD — uscita istituzionale`,
+    cot>150000?`Hedge funds estremamente net long +${(cot/1e3).toFixed(0)}K contratti`:
+    cot>0?`Hedge funds net long +${(cot/1e3).toFixed(0)}K`:
+    `Hedge funds net short ${(cot/1e3).toFixed(0)}K — bias ribassista`,
+    ry<-.5?`Real yields profondamente negativi ${ry}% — forte tailwind oro`:
+    ry<0?`Real yields negativi ${ry}% — supporto moderato`:
+    `Real yields positivi +${ry}% — headwind oro`,
+    {down:'USD in downtrend — bid meccanico sull\'oro',up:'USD in rafforzamento — frena XAU/USD',flat:'USD piatto — fattore neutro'}[d.usd_trend],
     `Contesto macro: ${d.macro_event}`,
   ].filter(Boolean);
 }
-function getData(){return{etf_flows:+document.getElementById('r-etf').value,cot_positioning:+document.getElementById('r-cot').value,real_yields:+document.getElementById('r-ry').value,usd_trend:document.getElementById('s-usd').value,gold_trend:document.getElementById('s-gt').value,macro_event:document.getElementById('s-macro').value};}
-function onSlider(){
-  const d=getData();
-  document.getElementById('v-etf').textContent=(d.etf_flows>0?'+':'')+d.etf_flows;
-  document.getElementById('v-cot').textContent=(d.cot_positioning>0?'+':'')+Math.round(d.cot_positioning/1000)+'K';
-  document.getElementById('v-ry').textContent=(d.real_yields>0?'+':'')+d.real_yields.toFixed(1)+'%';
-  const{score,breakdown}=computeScore(d);
-  updateRing(score);updateFactors(breakdown);updateSignals(enrichSignals(d));drawRadar(breakdown);drawPrice(score);
+
+function getData() {
+  return {
+    etf_flows:      +document.getElementById('r-etf').value,
+    cot_positioning:+document.getElementById('r-cot').value,
+    real_yields:    +document.getElementById('r-ry').value,
+    usd_trend:      document.getElementById('s-usd').value,
+    gold_trend:     document.getElementById('s-gt').value,
+    macro_event:    document.getElementById('s-macro').value,
+  };
 }
-function updateRing(score){
-  const col=score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
-  const arc=document.getElementById('score-arc');
-  arc.style.strokeDasharray=`${311*Math.abs(score)/100} 415`;arc.style.stroke=col;
-  const el=document.getElementById('score-val');el.textContent=(score>0?'+':'')+score;el.style.color=col;
-  const tEl=document.getElementById('score-tag');
-  const lbl=score>60?'STRONG BULL':score>25?'BULL':score<-60?'STRONG BEAR':score<-25?'BEAR':'NEUTRALE';
-  tEl.textContent=lbl;tEl.style.background=col+'18';tEl.style.color=col;tEl.style.border=`1px solid ${col}44`;
-  const note=document.getElementById('threshold-note');
-  const thr=cfg.score_threshold||30;
+
+// ─── SLIDER UPDATE ────────────────────────────────────────────────────────
+function onUpdate() {
+  const d = getData();
+  document.getElementById('v-etf').textContent = (d.etf_flows>0?'+':'')+d.etf_flows;
+  document.getElementById('v-cot').textContent = (d.cot_positioning>0?'+':'')+Math.round(d.cot_positioning/1000)+'K';
+  document.getElementById('v-ry').textContent  = (d.real_yields>0?'+':'')+d.real_yields.toFixed(1)+'%';
+  const {score, breakdown} = computeScore(d);
+  updateRing(score);
+  updateFactors(breakdown);
+  updateSignals(enrichSignals(d));
+  if (chartsReady) { drawPrice(score); drawRadar(breakdown); }
+}
+
+function updateRing(score) {
+  const col = score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
+  const arc = 273 * Math.abs(score)/100;
+  document.getElementById('ring-arc').style.strokeDasharray = arc+' 365';
+  document.getElementById('ring-arc').style.stroke = col;
+  document.getElementById('ring-val').textContent = (score>0?'+':'')+score;
+  document.getElementById('ring-val').style.color = col;
+  const lbl = score>60?'STRONG BULL':score>25?'BULL':score<-60?'STRONG BEAR':score<-25?'BEAR':'NEUTRALE';
+  const tag = document.getElementById('ring-tag');
+  tag.textContent = lbl;
+  tag.className = 'badge '+(score>25?'b-bull':score<-25?'b-bear':'b-neut');
+  const thr = CFG.score_threshold||30;
+  const note = document.getElementById('ring-note');
   if(Math.abs(score)>thr){note.textContent=`⚡ Segnale attivo → AI si attiva`;note.style.color='#18B85A';}
-  else{note.textContent=`⊘ Sotto soglia ±${thr} — AI inattiva`;note.style.color='#6880A0';}
+  else{note.textContent=`⊘ Sotto soglia ±${thr}`;note.style.color='#6880A0';}
 }
-function updateFactors(b){
-  const el=document.getElementById('factors-panel');
-  el.innerHTML=b.map(f=>`<div class="factor-row"><div class="factor-hdr"><span style="color:${f.c}">${f.i} ${f.l}</span><span style="color:${f.c}">${f.v>0?'+':''}${f.v} pt</span></div><div class="factor-track"><div class="factor-bar" style="width:${Math.abs(f.v)}%;background:${f.c};box-shadow:0 0 5px ${f.c}55"></div></div></div>`).join('')+
-  `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #192030;display:flex;justify-content:space-between;font-size:12px"><span style="color:#6880A0;font-weight:600">TOTALE</span><span style="font-weight:700;font-size:15px;color:${b.reduce((a,x)=>a+x.v,0)>0?'#18B85A':b.reduce((a,x)=>a+x.v,0)<0?'#E03838':'#C8A020'};font-family:'Courier New',monospace">${b.reduce((a,x)=>a+x.v,0)>0?'+':''}${b.reduce((a,x)=>a+x.v,0)}</span></div>`;
+
+function updateFactors(b) {
+  document.getElementById('factors-panel').innerHTML = b.map(f=>`
+    <div class="fbar-row">
+      <div class="fbar-hdr"><span style="color:${f.c}">${f.i} ${f.l}</span><b style="color:${f.c}">${f.v>0?'+':''}${f.v}</b></div>
+      <div class="fbar-track"><div class="fbar-fill" style="width:${Math.abs(f.v)}%;background:${f.c};box-shadow:0 0 4px ${f.c}55"></div></div>
+    </div>`).join('')+`
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid #192030;display:flex;justify-content:space-between;font-size:12px">
+      <span style="color:#6880A0;font-weight:600">TOTALE</span>
+      <span style="font-weight:700;font-size:14px;font-family:monospace;color:${b.reduce((a,x)=>a+x.v,0)>0?'#18B85A':b.reduce((a,x)=>a+x.v,0)<0?'#E03838':'#C8A020'}">
+        ${b.reduce((a,x)=>a+x.v,0)>0?'+':''}${b.reduce((a,x)=>a+x.v,0)}
+      </span></div>`;
 }
-function updateSignals(sigs){document.getElementById('signals-list').innerHTML=sigs.map(s=>`<div class="signal-item"><span style="color:#C8A020;flex-shrink:0;margin-top:1px">▸</span><span>${s}</span></div>`).join('');}
-function setPipe(step){
-  document.getElementById('pipeline-panel').innerHTML=STEPS.map((s,i)=>{
-    const st=i<step?'done':i===step?'active':'idle';
-    const col=st==='active'?'#C8A020':st==='done'?'#18B85A':'#6880A0';
-    const num=st==='done'?'✓':st==='active'?'▶':i+1;
-    return`<div class="pipe-row"><div class="pipe-num pn-${st}">${num}</div><div style="flex:1"><div style="font-size:10.5px;font-weight:500;color:${col}">${s.l}</div><div style="font-size:9px;color:#6880A044;margin-top:1px">${s.s}</div></div>${st==='active'?'<div class="pipe-spin"></div>':''}</div>`;
+
+function updateSignals(sigs) {
+  document.getElementById('signals-list').innerHTML = sigs.map(s=>`
+    <div class="sig-item"><span style="color:#C8A020;flex-shrink:0">▸</span><span>${s}</span></div>`).join('');
+}
+
+// ─── PIPELINE ─────────────────────────────────────────────────────────────
+const STEPS = ['Validazione','Score Quant','Segnali','Grounding Web','Sintesi AI','Completato'];
+function setPipe(step) {
+  document.getElementById('pipeline-panel').innerHTML = STEPS.map((s,i)=>{
+    const st = i<step?'d':i===step?'a':'i';
+    const col = st==='a'?'#C8A020':st==='d'?'#18B85A':'#6880A0';
+    return `<div class="pipe-row">
+      <div class="pnum pn-${st==='d'?'d':st==='a'?'a':'i'}">${st==='d'?'✓':st==='a'?'▶':i+1}</div>
+      <div style="font-size:10px;color:${col};flex:1">${s}</div>
+      ${st==='a'?'<div style="width:10px;height:10px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>':''}
+    </div>`;
   }).join('');
 }
-function addLog(msg,cls=''){
-  const el=document.getElementById('log-area');
-  if(el.children.length===1&&el.children[0].textContent==='In attesa di analisi...')el.innerHTML='';
-  const d=document.createElement('div');d.className='log-line'+(cls?' '+cls:'');
-  d.textContent=new Date().toLocaleTimeString()+' '+msg;
-  el.appendChild(d);el.scrollTop=el.scrollHeight;
+
+// ─── LOG ──────────────────────────────────────────────────────────────────
+function addLog(msg, cls='') {
+  const el = document.getElementById('log-box');
+  if(el.children.length===1&&el.children[0].style.color==='rgba(104, 128, 160, 0.267)') el.innerHTML='';
+  const d = document.createElement('div');
+  d.className = 'log-'+cls;
+  d.textContent = new Date().toLocaleTimeString('it')+' '+msg;
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
 }
-function drawPrice(score){
-  const canvas=document.getElementById('priceChart');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.parentElement.offsetWidth-28||500,H=130;
-  canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);
-  const n=40,trend=score/250;const pts=[];let p=2310;
-  for(let i=0;i<n;i++){p+=(Math.random()-.47+trend)*9;pts.push(Math.max(2100,Math.min(2600,p)));}
-  const mn=Math.min(...pts)-8,mx=Math.max(...pts)+8;
-  const toY=v=>H-((v-mn)/(mx-mn))*(H-24)-12;
-  const toX=i=>(i/(n-1))*W;
+
+// ─── CHARTS ───────────────────────────────────────────────────────────────
+function drawPrice(score) {
+  const canvas = document.getElementById('price-chart');
+  if(!canvas) return;
+  const W = canvas.parentElement.clientWidth - 28;
+  if(W < 50) return;
+  canvas.width = W; canvas.height = 130;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,130);
+  const n=40, trend=score/280; let p=2310;
+  const pts=[]; for(let i=0;i<n;i++){p+=(Math.random()-.47+trend)*9;pts.push(Math.max(2100,Math.min(2600,p)));}
+  const mn=Math.min(...pts)-8, mx=Math.max(...pts)+8;
+  const toY=v=>130-((v-mn)/(mx-mn))*106-12, toX=i=>(i/(n-1))*W;
   const col=score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
-  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,col+'28');bg.addColorStop(1,'transparent');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.moveTo(toX(0),H);
-  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));ctx.lineTo(W,H);ctx.closePath();ctx.fill();
+  const bg=ctx.createLinearGradient(0,0,0,130);bg.addColorStop(0,col+'28');bg.addColorStop(1,'transparent');
+  ctx.fillStyle=bg;ctx.beginPath();ctx.moveTo(toX(0),130);
+  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));ctx.lineTo(W,130);ctx.closePath();ctx.fill();
   ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();
   pts.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));ctx.stroke();
-  // Dots at start and end
   [0,n-1].forEach(i=>{ctx.fillStyle=col;ctx.beginPath();ctx.arc(toX(i),toY(pts[i]),4,0,Math.PI*2);ctx.fill();});
-  ctx.fillStyle='#D0DFF8';ctx.font='bold 11px Courier New';ctx.textAlign='center';
-  ctx.fillText(`XAU/USD ~${pts[n-1].toFixed(0)}`,W/2,14);
+  ctx.fillStyle='#D0DFF8';ctx.font='bold 11px monospace';ctx.textAlign='center';
+  ctx.fillText('XAU/USD ~'+pts[n-1].toFixed(0),W/2,13);
   ctx.fillStyle='#6880A0';ctx.font='9px monospace';ctx.textAlign='left';
-  ctx.fillText(`${mn.toFixed(0)}`,4,H-4);ctx.fillText(`${mx.toFixed(0)}`,4,12);
-  ctx.textAlign='right';ctx.fillText('7 giorni →',W-4,H-4);
+  ctx.fillText(mn.toFixed(0),4,128);ctx.fillText(mx.toFixed(0),4,12);
+  ctx.textAlign='right';ctx.fillText('7gg →',W-4,128);
 }
-function drawRadar(breakdown){
-  const canvas=document.getElementById('radarChart');
-  const ctx=canvas.getContext('2d');
-  const W=canvas.parentElement.offsetWidth-28||240,H=190;
-  canvas.width=W;canvas.height=H;ctx.clearRect(0,0,W,H);
-  const cx=W/2,cy=H/2+5,r=72;
+
+function drawRadar(breakdown) {
+  const canvas = document.getElementById('radar-chart');
+  if(!canvas) return;
+  const W = canvas.parentElement.clientWidth - 28;
+  if(W < 50) return;
+  canvas.width = W; canvas.height = 180;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,180);
+  const cx=W/2, cy=95, r=65;
   const factors=[
     {l:'ETF',  v:breakdown.find(b=>b.l.includes('ETF'))?.v||0,  max:30},
     {l:'COT',  v:breakdown.find(b=>b.l.includes('COT'))?.v||0,  max:25},
@@ -363,7 +625,7 @@ function drawRadar(breakdown){
     {l:'USD',  v:breakdown.find(b=>b.l.includes('USD'))?.v||0,  max:15},
     {l:'Trend',v:breakdown.find(b=>b.l.includes('Trend'))?.v||0,max:10},
   ];
-  const n=factors.length,angle=i=>(i/n)*Math.PI*2-Math.PI/2;
+  const n=factors.length, angle=i=>(i/n)*Math.PI*2-Math.PI/2;
   [.25,.5,.75,1].forEach(p=>{
     ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.beginPath();
     factors.forEach((_,i)=>{const a=angle(i),x=cx+Math.cos(a)*r*p,y=cy+Math.sin(a)*r*p;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
@@ -372,79 +634,347 @@ function drawRadar(breakdown){
   ctx.setLineDash([]);
   factors.forEach((_,i)=>{const a=angle(i);ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();});
   ctx.beginPath();
-  factors.forEach((f,i)=>{const a=angle(i),p=(f.v+f.max)/(f.max*2),x=cx+Math.cos(a)*r*p,y=cy+Math.sin(a)*r*p;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  factors.forEach((f,i)=>{const a=angle(i),pct=(f.v+f.max)/(f.max*2),x=cx+Math.cos(a)*r*pct,y=cy+Math.sin(a)*r*pct;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
   ctx.closePath();ctx.fillStyle='#C8A02033';ctx.fill();ctx.strokeStyle='#C8A020';ctx.lineWidth=2;ctx.stroke();
-  ctx.font='bold 10px sans-serif';ctx.textAlign='center';
-  factors.forEach((f,i)=>{const a=angle(i),lx=cx+Math.cos(a)*(r+18),ly=cy+Math.sin(a)*(r+18)+4;ctx.fillStyle=f.v>0?'#18B85A':f.v<0?'#E03838':'#6880A0';ctx.fillText(f.l,lx,ly);});
+  ctx.textAlign='center';
+  factors.forEach((f,i)=>{const a=angle(i),lx=cx+Math.cos(a)*(r+17),ly=cy+Math.sin(a)*(r+17)+4;ctx.fillStyle=f.v>0?'#18B85A':f.v<0?'#E03838':'#6880A0';ctx.font='bold 9px sans-serif';ctx.fillText(f.l,lx,ly);});
 }
-async function runAnalysis(){
-  if(loading)return;
-  const d=getData();const{score}=computeScore(d);const thr=cfg.score_threshold||30;
-  document.getElementById('result-card').classList.remove('visible');
+
+// ─── ANALYZE ──────────────────────────────────────────────────────────────
+async function doAnalyze() {
+  if(loading) return;
+  const d = getData();
+  const {score} = computeScore(d);
+  const thr = CFG.score_threshold||30;
+  // Reset UI
+  document.getElementById('result-card').style.display='none';
   document.getElementById('noise-msg').style.display='none';
+  document.getElementById('err-box').style.display='none';
   document.getElementById('json-panel').style.display='none';
+  document.getElementById('log-box').innerHTML='';
   loading=true;
   document.getElementById('run-btn').disabled=true;
-  document.getElementById('btn-spinner').classList.add('visible');
-  document.getElementById('btn-label').textContent='ANALISI IN CORSO...';
-  document.getElementById('log-area').innerHTML='';
-  setPipe(0);addLog('▶ Validazione parametri...');await sl(300);
-  setPipe(1);addLog('⊕ Smart Money Score...');await sl(400);
-  addLog(`✓ Score: ${score>0?'+':''}${score}/100 [${Math.abs(score)>thr?'SEGNALE':'NOISE'}]`,'ok');
-  setPipe(2);addLog('⊞ Estrazione segnali...');await sl(300);
-  addLog(`✓ ${enrichSignals(d).length} segnali estratti`,'ok');
-  if(Math.abs(score)<=thr){addLog(`⚡ Sotto soglia ±${thr} — AI skippata`);setPipe(5);document.getElementById('noise-msg').style.display='block';resetBtn();return;}
-  setPipe(3);const mode=document.getElementById('s-mode').value;addLog(`⬡ Backend (mode=${mode})...`,'ai');
-  try{
-    const res=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...d,mode})});
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    const data=await res.json();addLog('✓ Risposta ricevuta','ok');
-    setPipe(4);addLog('◈ Sintesi Claude...',  'ai');
-    const a=data.analysis||{};
+  document.getElementById('btn-spin').classList.add('on');
+  document.getElementById('btn-lbl').textContent='IN CORSO...';
+  // Steps
+  setPipe(0); addLog('▶ Validazione...'); await sl(250);
+  setPipe(1); addLog('⊕ Smart Money Score...',); await sl(350);
+  addLog(`✓ Score: ${score>0?'+':''}${score}/100`,'ok');
+  setPipe(2); await sl(250);
+  addLog(`✓ ${enrichSignals(d).length} segnali`,'ok');
+  if(Math.abs(score)<=thr){addLog('⚡ Sotto soglia — AI skippata');setPipe(5);document.getElementById('noise-msg').style.display='block';resetBtn();return;}
+  setPipe(3);
+  const mode = document.getElementById('s-mode').value;
+  addLog(`◈ Claude API (mode=${mode})...`,'ai');
+  try {
+    const res = await fetch(apiUrl('/api/analyze'), {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({...d, mode}),
+    });
+    const text = await res.text();
+    if(!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,120)}`);
+    const data = JSON.parse(text);
+    addLog('✓ Risposta ricevuta','ok');
+    setPipe(4);
+    const a = data.analysis||{};
     addLog(`✓ bias=${a.bias} conf=${a.confidence}% val=${a.validation}`,'ok');
-    if(data.web_context?.web_searches_done?.length)addLog(`🔍 ${data.web_context.web_searches_done.length} ricerche web`,'web');
-    setPipe(5);showResult(a,data.engine_used);
-  }catch(e){addLog('✗ '+e.message,'err');setPipe(-1);}
+    if(data.web_context?.web_searches_done?.length)
+      addLog(`🔍 ${data.web_context.web_searches_done.length} ricerche web`,'web');
+    setPipe(5);
+    showResult(a, data.engine_used, computeScore(d).score);
+  } catch(e) {
+    addLog('✗ '+e.message,'err');
+    const eb=document.getElementById('err-box');
+    eb.textContent='⚠ '+e.message;eb.style.display='block';
+    setPipe(-1);
+  }
   resetBtn();
 }
-function showResult(a,engine){
+
+function showResult(a, engine, score) {
   if(!a||a._skipped){document.getElementById('noise-msg').style.display='block';return;}
-  document.getElementById('result-card').classList.add('visible');
+  const card=document.getElementById('result-card');card.style.display='block';
   const col=a.bias==='bullish'?'#18B85A':a.bias==='bearish'?'#E03838':'#C8A020';
-  const biasIcon=a.bias==='bullish'?'▲ BULLISH':a.bias==='bearish'?'▼ BEARISH':'→ NEUTRALE';
-  document.getElementById('result-engine-badge').textContent=engine==='dual'?'Perplexity+Claude':'Claude+web';
-  const bb=document.getElementById('bias-badge');bb.textContent=biasIcon;bb.style.background=col+'18';bb.style.color=col;bb.style.border=`1px solid ${col}44`;
+  const icon=a.bias==='bullish'?'▲ BULLISH':a.bias==='bearish'?'▼ BEARISH':'→ NEUTRALE';
+  document.getElementById('res-engine').textContent=engine==='dual'?'· Perplexity+Claude':'· Claude+web';
+  const bb=document.getElementById('res-bias');bb.textContent=icon;
+  bb.className='badge '+(a.bias==='bullish'?'b-bull':a.bias==='bearish'?'b-bear':'b-neut');
   const conf=a.confidence||0;
-  document.getElementById('conf-bar').style.width=conf+'%';document.getElementById('conf-bar').style.background=col;
-  document.getElementById('conf-val').textContent=conf+'%';document.getElementById('conf-val').style.color=col;
-  const valCol=a.validation==='confirmed'?'#18B85A':a.validation==='contradicted'?'#E03838':'#C8A020';
-  const valTxt=a.validation==='confirmed'?'✓ WEB CONFERMATO':a.validation==='contradicted'?'✗ CONTRADDETTO':'⚡ MISTO';
-  const vb=document.getElementById('val-badge');vb.textContent=valTxt;vb.style.background=valCol+'18';vb.style.color=valCol;vb.style.border=`1px solid ${valCol}44`;
-  document.getElementById('conv-badge').textContent=`CONV. ${a.convergence_score||'—'}%`;
-  document.getElementById('horizon-badge').textContent=(a.time_horizon||'—').toUpperCase();
-  document.getElementById('summary-text').textContent=a.summary||'—';
+  document.getElementById('res-conf-bar').style.width=conf+'%';document.getElementById('res-conf-bar').style.background=col;
+  document.getElementById('res-conf-val').textContent=conf+'%';document.getElementById('res-conf-val').style.color=col;
+  const vc=a.validation==='confirmed'?'#18B85A':a.validation==='contradicted'?'#E03838':'#C8A020';
+  const vt=a.validation==='confirmed'?'✓ WEB CONFERMATO':a.validation==='contradicted'?'✗ CONTRADDETTO':'⚡ MISTO';
+  const vb=document.getElementById('res-val-badge');vb.textContent=vt;vb.style.background=vc+'18';vb.style.color=vc;vb.style.border=`1px solid ${vc}44`;
+  document.getElementById('res-conv-badge').textContent='CONV '+( a.convergence_score||'—')+'%';
+  document.getElementById('res-horizon-badge').textContent=(a.time_horizon||'—').toUpperCase();
+  document.getElementById('res-summary').textContent=a.summary||'—';
   const wf=a.web_findings||[];
-  if(wf.length>0){document.getElementById('findings-section').style.display='block';document.getElementById('findings-list').innerHTML=wf.map(f=>`<div style="font-size:10.5px;color:#7A90B0;margin-bottom:4px;display:flex;gap:6px;line-height:1.5"><span style="color:#2E7FE8;flex-shrink:0">▸</span><span>${f}</span></div>`).join('');}
-  document.getElementById('drivers-list').innerHTML=(a.drivers||[]).map(d=>`<div class="col-item"><span style="color:#18B85A">+</span><span>${d}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
-  document.getElementById('risks-list').innerHTML=(a.risk_factors||[]).map(r=>`<div class="col-item"><span style="color:#E03838">!</span><span>${r}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
-  document.getElementById('conflicts-list').innerHTML=(a.contradictions||[]).length>0?(a.contradictions||[]).map(c=>`<div class="col-item"><span style="color:#C8A020">⚡</span><span>${c}</span></div>`).join(''):'<div style="color:#18B85A;font-size:10px">Nessuno</div>';
+  if(wf.length>0){document.getElementById('res-findings').style.display='block';document.getElementById('res-findings-list').innerHTML=wf.map(f=>`<div style="font-size:10.5px;color:#7A90B0;margin-bottom:4px;display:flex;gap:6px;line-height:1.5"><span style="color:#2E7FE8">▸</span><span>${f}</span></div>`).join('');}
+  document.getElementById('res-drivers').innerHTML=(a.drivers||[]).map(d=>`<div class="three-item"><span style="color:#18B85A">+</span><span>${d}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
+  document.getElementById('res-risks').innerHTML=(a.risk_factors||[]).map(r=>`<div class="three-item"><span style="color:#E03838">!</span><span>${r}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
+  document.getElementById('res-conflicts').innerHTML=(a.contradictions||[]).length>0?(a.contradictions||[]).map(c=>`<div class="three-item"><span style="color:#C8A020">⚡</span><span>${c}</span></div>`).join(''):'<div style="color:#18B85A;font-size:10px">Nessuno</div>';
   document.getElementById('json-panel').style.display='block';
-  document.getElementById('json-out').textContent=JSON.stringify({engine,smart_money_score:computeScore(getData()).score,analysis:a},null,2);
+  document.getElementById('json-out').textContent=JSON.stringify({engine,score,analysis:a},null,2);
 }
-function resetBtn(){loading=false;document.getElementById('run-btn').disabled=!cfg.has_anthropic;document.getElementById('btn-spinner').classList.remove('visible');document.getElementById('btn-label').textContent='▶ ANALIZZA CON AI';}
-const sl=ms=>new Promise(r=>setTimeout(r,ms));
-async function init(){
-  try{const res=await fetch('/api/config');cfg=await res.json();
-    const ab=document.getElementById('anthropic-badge');
-    if(cfg.has_anthropic){ab.textContent='● Claude OK';ab.className='key-status key-ok';}
-    else{ab.textContent='● Claude non configurato';ab.className='key-status key-no';document.getElementById('no-key-warn').style.display='block';document.getElementById('run-btn').disabled=true;}
-    document.getElementById('engine-badge').textContent=`engine: ${cfg.has_perplexity?'dual':'claude'} | soglia: ±${cfg.score_threshold}`;
-    document.getElementById('engine-badge').style.color=cfg.has_perplexity?'#8B5CF6':'#C8A020';
-  }catch(e){console.warn('Config non disponibile:',e);}
-  onSlider();setPipe(-1);
-  window.addEventListener('resize',()=>{onSlider();});
+
+function resetBtn(){loading=false;document.getElementById('run-btn').disabled=!CFG.has_anthropic;document.getElementById('btn-spin').classList.remove('on');document.getElementById('btn-lbl').textContent='▶ ANALIZZA CON AI';}
+
+// ─── SCANNER ──────────────────────────────────────────────────────────────
+async function loadScanner() {
+  document.getElementById('scanner-loading').style.display='block';
+  document.getElementById('scanner-grid').innerHTML='';
+  document.getElementById('scanner-err').style.display='none';
+  try {
+    const res = await fetch(apiUrl('/api/scheduled'));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    document.getElementById('scanner-loading').style.display='none';
+    const meta=document.getElementById('scanner-meta');meta.style.display='flex';
+    document.getElementById('sc-last').textContent=data.last_run?new Date(data.last_run).toLocaleString('it'):'—';
+    document.getElementById('sc-next').textContent=data.next_run?new Date(data.next_run).toLocaleString('it'):'—';
+    document.getElementById('sc-running-badge').style.display=data.running?'inline-flex':'none';
+    if(!data.results||data.results.length===0){
+      document.getElementById('scanner-grid').innerHTML='<div style="grid-column:1/-1;padding:30px;text-align:center;color:#6880A0;font-size:12px">Nessun dato — clicca "Esegui Ora" nello Scheduler</div>';
+      return;
+    }
+    document.getElementById('scanner-grid').innerHTML=data.results.map((r,i)=>assetCard(r,i)).join('');
+  } catch(e) {
+    document.getElementById('scanner-loading').style.display='none';
+    const eb=document.getElementById('scanner-err');eb.textContent='⚠ '+e.message;eb.style.display='block';
+  }
 }
-window.addEventListener('DOMContentLoaded',init);
+
+function assetCard(r, idx) {
+  const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
+  const cls=r.score>30?'bull':r.score<-30?'bear':'neut';
+  const bias=r.analysis?.bias||'—';
+  const conf=r.analysis?.confidence||'—';
+  const delay=idx*0.05;
+  return `<div class="asset-card ${cls}" style="animation-delay:${delay}s" onclick="showAssetDetail(${idx})">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#D0DFF8">${r.symbol}</div>
+        <div style="font-size:9px;color:#6880A0;margin-top:1px">${r.name}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:18px;font-weight:700;font-family:monospace;color:${col}">${r.score>0?'+':''}${r.score}</div>
+        <div style="font-size:8px;color:#6880A0">/100</div>
+      </div>
+    </div>
+    <div style="height:3px;background:#192030;border-radius:2px;margin-bottom:8px">
+      <div style="height:100%;width:${Math.abs(r.score)}%;background:${col};border-radius:2px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px">
+      <span class="badge ${cls==='bull'?'b-bull':cls==='bear'?'b-bear':'b-neut'}" style="font-size:9px">${r.score>30?'▲ BULL':r.score<-30?'▼ BEAR':'→ NEUT'}</span>
+      ${r.analysis?`<span style="color:#6880A0">conf <span style="color:${col}">${conf}%</span></span>`:`<span style="color:#6880A044;font-size:9px">no AI analysis</span>`}
+    </div>
+    ${r.analysis?.summary?`<div style="font-size:9px;color:#7A90B0;margin-top:8px;line-height:1.5;border-top:1px solid #19203022;padding-top:6px">${r.analysis.summary.slice(0,90)}...</div>`:''}
+  </div>`;
+}
+
+let scannerResults = [];
+async function loadScannerData() {
+  const res = await fetch(apiUrl('/api/scheduled'));
+  const data = await res.json();
+  scannerResults = data.results||[];
+  return data;
+}
+
+function showAssetDetail(idx) {
+  if(!scannerResults.length) return;
+  const r = scannerResults[idx]; if(!r) return;
+  const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
+  document.getElementById('detail-title').textContent=`${r.symbol} — ${r.name}`;
+  document.getElementById('detail-body').innerHTML=`
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <div style="font-size:32px;font-weight:700;font-family:monospace;color:${col}">${r.score>0?'+':''}${r.score}</div>
+      <span class="badge ${r.score>30?'b-bull':r.score<-30?'b-bear':'b-neut'}">${r.score>30?'▲ BULLISH':r.score<-30?'▼ BEARISH':'→ NEUTRALE'}</span>
+      <span style="font-size:10px;color:#6880A0">${r.type.toUpperCase()} · ${r.sector.toUpperCase()}</span>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Breakdown Fattori</div>
+      ${r.breakdown.map(b=>`
+        <div class="fbar-row"><div class="fbar-hdr"><span style="color:${b.c}">${b.i} ${b.l}</span><b style="color:${b.c}">${b.v>0?'+':''}${b.v}</b></div>
+        <div class="fbar-track"><div class="fbar-fill" style="width:${Math.abs(b.v)}%;background:${b.c}"></div></div></div>`).join('')}
+    </div>
+    ${r.analysis?`
+    <div style="padding:12px;background:#07090D;border-radius:5px;border:1px solid #192030">
+      <div style="font-size:9px;color:#C8A020;letter-spacing:.1em;margin-bottom:8px">◈ ANALISI CLAUDE AI</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="badge ${r.analysis.bias==='bullish'?'b-bull':r.analysis.bias==='bearish'?'b-bear':'b-neut'}">${r.analysis.bias?.toUpperCase()}</span>
+        <span class="badge b-neut">CONF ${r.analysis.confidence}%</span>
+        <span class="badge b-neut">${(r.analysis.time_horizon||'').toUpperCase()}</span>
+      </div>
+      <div style="font-size:11px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:10px;margin-bottom:10px">${r.analysis.summary||'—'}</div>
+      ${(r.analysis.drivers||[]).length?`<div style="font-size:9px;color:#18B85A;margin-bottom:4px;letter-spacing:.1em">DRIVERS</div>${r.analysis.drivers.map(d=>`<div style="font-size:10px;color:#7A90B0;margin-bottom:3px">+ ${d}</div>`).join('')}`:''}
+    </div>`:`<div style="color:#6880A044;font-size:11px;padding:10px">Nessuna analisi AI (score sotto soglia)</div>`}
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail(e) {
+  if(!e||e.target===document.getElementById('detail-overlay')||e.target.tagName==='BUTTON')
+    document.getElementById('detail-overlay').classList.remove('open');
+}
+
+// ─── SCHEDULER ────────────────────────────────────────────────────────────
+async function loadScheduler() {
+  try {
+    const res = await fetch(apiUrl('/api/scheduled'));
+    const data = await res.json();
+    document.getElementById('sch-status').textContent = data.running?'⟳ In esecuzione...':'✓ In attesa';
+    document.getElementById('sch-status').style.color = data.running?'#C8A020':'#18B85A';
+    document.getElementById('sch-last').textContent = data.last_run?new Date(data.last_run).toLocaleString('it'):'Mai';
+    document.getElementById('sch-next').textContent = data.next_run?new Date(data.next_run).toLocaleString('it'):'—';
+    document.getElementById('sch-count').textContent = data.count||0;
+    // Top 5
+    const top=(data.results||[]).slice(0,5);
+    document.getElementById('sch-top-list').innerHTML=top.length?top.map(r=>{
+      const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
+      return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid #19203022;font-size:11px">
+        <span style="font-weight:700;color:#D0DFF8;width:45px">${r.symbol}</span>
+        <span style="font-family:monospace;font-weight:700;color:${col};width:40px">${r.score>0?'+':''}${r.score}</span>
+        <div style="flex:1;height:3px;background:#192030;border-radius:2px"><div style="height:100%;width:${Math.abs(r.score)}%;background:${col};border-radius:2px"></div></div>
+        <span style="color:#6880A0;width:100px;text-align:right">${r.name.slice(0,14)}</span>
+        ${r.analysis?`<span class="badge ${r.analysis.bias==='bullish'?'b-bull':r.analysis.bias==='bearish'?'b-bear':'b-neut'}" style="font-size:9px">${r.analysis.bias?.toUpperCase()}</span>`:'<span style="color:#6880A044;font-size:9px">no AI</span>'}
+      </div>`;}).join(''):'<div style="color:#6880A044;font-size:11px;padding:8px 0">Nessun dato</div>';
+  } catch(e) {
+    document.getElementById('sch-status').textContent='Errore: '+e.message;
+    document.getElementById('sch-status').style.color='#E03838';
+  }
+}
+
+async function forceRefresh() {
+  try {
+    await fetch(apiUrl('/api/scheduled/refresh'), {method:'POST'});
+    document.getElementById('sch-status').textContent='⟳ Avviato...';
+    document.getElementById('sch-status').style.color='#C8A020';
+    setTimeout(()=>{loadScheduler();loadScanner();},3000);
+  } catch(e) {alert('Errore: '+e.message);}
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  const tabs = ['gold','scanner','scheduler','settings'];
+  const idx = tabs.indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='scanner'){loadScannerData().then(()=>loadScanner());}
+  if(id==='scheduler')loadScheduler();
+  if(id==='settings')loadSettings();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+const sl = ms=>new Promise(r=>setTimeout(r,ms));
+
+async function init() {
+  // Attacca eventi slider
+  ['r-etf','r-cot','r-ry'].forEach(id=>document.getElementById(id).addEventListener('input',onUpdate));
+  ['s-usd','s-gt','s-macro'].forEach(id=>document.getElementById(id).addEventListener('change',onUpdate));
+
+  // Carica config
+  try {
+    const res = await fetch(apiUrl('/api/config'));
+    if(res.ok) {
+      CFG = await res.json();
+      const kb=document.getElementById('hdr-key-badge');
+      if(CFG.has_anthropic){kb.textContent='● Claude OK';kb.className='badge b-ok';}
+      else{kb.textContent='● No API Key';document.getElementById('key-warn').style.display='block';document.getElementById('run-btn').disabled=true;}
+      document.getElementById('hdr-engine').textContent=`engine: ${CFG.has_perplexity?'dual':'claude'} · soglia ±${CFG.score_threshold}`;
+      document.getElementById('info-threshold').textContent=`soglia: ±${CFG.score_threshold}`;
+    }
+  } catch(e) { console.warn('Config API non disponibile:', e); }
+
+  // Init UI
+  setPipe(-1);
+  onUpdate();  // Prima chiamata con valori default
+
+  // Aspetta che il DOM abbia dimensioni reali, poi disegna i canvas
+  const waitAndDraw = () => {
+    const w = document.getElementById('price-chart')?.parentElement?.clientWidth;
+    if(w && w>50) {
+      chartsReady = true;
+      onUpdate();
+    } else {
+      setTimeout(waitAndDraw, 100);
+    }
+  };
+  setTimeout(waitAndDraw, 200);
+
+  // Aggiorna grafici al resize
+  window.addEventListener('resize', () => { if(chartsReady) onUpdate(); });
+}
+
+
+// ─── SETTINGS TAB ─────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const res = await fetch(apiUrl('/api/config'));
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const cfg = await res.json();
+
+    // Email status
+    const esb = document.getElementById('email-status-box');
+    if(cfg.email_enabled) {
+      esb.innerHTML = `<span style="color:#18B85A">● Email abilitata</span><br>
+        Destinatario: <b style="color:#D0DFF8">${cfg.email_to||'—'}</b><br>
+        Score minimo: <b style="color:#C8A020">±${cfg.email_min_score}</b>`;
+    } else {
+      esb.innerHTML = '<span style="color:#E03838">● Email disabilitata</span><br>Abilita <b style="color:#D0DFF8">email_enabled: true</b> nelle impostazioni addon';
+    }
+
+    // Email config
+    const ecb = document.getElementById('email-config-box');
+    ecb.innerHTML = `
+      SMTP host: <b style="color:#D0DFF8">${cfg.smtp_host||'—'}</b><br>
+      Porta: <b style="color:#D0DFF8">${cfg.smtp_port||587}</b><br>
+      Engine: <b style="color:#C8A020">${cfg.engine_mode}</b><br>
+      Soglia: <b style="color:#C8A020">±${cfg.score_threshold}</b>`;
+
+    // Scheduler
+    const scb = document.getElementById('sched-config-box');
+    scb.innerHTML = `
+      Intervallo: <b style="color:#C8A020">${cfg.scheduler_minutes} minuti</b><br>
+      Stato: <b style="color:${cfg.scheduler_enabled?'#18B85A':'#E03838'}">${cfg.scheduler_enabled?'✓ Attivo':'✗ Disabilitato'}</b><br>
+      Asset monitorati: <b style="color:#D0DFF8">GLD · IAU · SPY · QQQ · XLE · TLT · AAPL · NVDA · MSFT · XOM</b>`;
+
+    // Abilita/disabilita bottone test
+    document.getElementById('test-email-btn').disabled = !cfg.email_enabled;
+
+  } catch(e) {
+    document.getElementById('email-status-box').innerHTML = '<span style="color:#E03838">✗ Errore: '+e.message+'</span>';
+  }
+}
+
+async function sendTestEmail() {
+  const btn = document.getElementById('test-email-btn');
+  const res_el = document.getElementById('test-email-result');
+  btn.disabled = true;
+  btn.textContent = '⟳ Invio in corso...';
+  res_el.style.display = 'none';
+  try {
+    const res = await fetch(apiUrl('/api/email/test'), {method:'POST'});
+    const data = await res.json();
+    if(res.ok && data.status==='sent') {
+      res_el.style.display = 'inline';
+      res_el.style.color = '#18B85A';
+      res_el.textContent = '✓ Email inviata con successo!';
+    } else {
+      throw new Error(data.detail || data.status || 'Errore sconosciuto');
+    }
+  } catch(e) {
+    res_el.style.display = 'inline';
+    res_el.style.color = '#E03838';
+    res_el.textContent = '✗ '+e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '✉ Invia Email di Test';
+}
+
+window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
