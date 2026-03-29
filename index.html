@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gold Intelligence</title>
+
+  <!-- React + Babel via CDN — no build step needed -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body {
+      background: #07090D;
+      color: #D0DFF8;
+      font-family: 'IBM Plex Mono', 'Fira Code', monospace;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: #07090D; }
+    ::-webkit-scrollbar-thumb { background: #192030; border-radius: 2px; }
+
+    @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.25} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes ticker   { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    @keyframes spin     { to{transform:rotate(360deg)} }
+    @keyframes glow     { 0%,100%{box-shadow:0 0 6px #C8A02044} 50%{box-shadow:0 0 18px #C8A02099} }
+
+    .fade-up { animation: fadeUp .4s ease forwards; }
+
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; height: 2px;
+      background: #192030; outline: none; cursor: pointer; border-radius: 2px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+      background: #C8A020; cursor: pointer; box-shadow: 0 0 8px #C8A02055;
+    }
+    select, .key-input {
+      background: #07090D; color: #D0DFF8;
+      border: 1px solid #192030; border-radius: 3px;
+      padding: 5px 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      outline: none; width: 100%; transition: border-color .2s;
+    }
+    select:focus, .key-input:focus { border-color: #C8A02066; }
+    .run-btn {
+      width: 100%; padding: 11px 0;
+      background: linear-gradient(135deg, #7A5C0A, #C8A020);
+      color: #07090D; border: none; border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600;
+      letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    }
+    .run-btn:hover:not(:disabled) { background: linear-gradient(135deg, #C8A020, #E6BB3A); box-shadow: 0 0 28px #C8A02044; }
+    .run-btn:disabled { background: #3D4F6B; cursor: not-allowed; }
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:2px; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+    .b-bull { background:#18B85A18; color:#18B85A; border:1px solid #18B85A44; }
+    .b-bear { background:#E0383818; color:#E03838; border:1px solid #E0383844; }
+    .b-neut { background:#7A5C0A28; color:#C8A020; border:1px solid #7A5C0A88; }
+    .ticker-wrap { overflow:hidden; white-space:nowrap; border-top:1px solid #192030; border-bottom:1px solid #192030; background:#0B0E16; height:27px; display:flex; align-items:center; }
+    .ticker-track { display:inline-flex; animation:ticker 55s linear infinite; }
+    .step-row { display:flex; align-items:flex-start; gap:10px; padding:6px 0; border-bottom:1px solid #19203022; }
+    .step-row:last-child { border-bottom:none; }
+    .snum { width:18px; height:18px; border-radius:3px; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600; }
+    .s-idle   { background:#192030; color:#3D4F6B; }
+    .s-active { background:#C8A02028; color:#C8A020; border:1px solid #C8A02055; animation:glow 1.5s infinite; }
+    .s-done   { background:#18B85A22; color:#18B85A; border:1px solid #18B85A44; }
+    .spinner  { width:11px; height:11px; flex-shrink:0; margin-top:3px; border:2px solid #C8A02033; border-top-color:#C8A020; border-radius:50%; animation:spin .7s linear infinite; }
+    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .ha-notice { padding:8px 12px; background:#2E7FE814; border:1px solid #2E7FE844; border-radius:4px; font-size:10px; color:#2E7FE8; line-height:1.7; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+const T = {
+  bg:'#07090D', panel:'#0B0E16', border:'#192030',
+  gold:'#C8A020', goldL:'#E6BB3A', goldD:'#7A5C0A',
+  green:'#18B85A', red:'#E03838', blue:'#2E7FE8',
+  muted:'#3D4F6B', text:'#D0DFF8', dim:'#6880A0',
+};
+const SANS = "'IBM Plex Sans', sans-serif";
+const MONO = "'IBM Plex Mono', monospace";
+
+// ── Quant Engine (client-side, identico al backend) ───────────────────────
+function computeScore(d) {
+  let s = 0; const b = [];
+  const etf = +d.etf_flows, w = Math.min(30, Math.round(Math.abs(etf)/30));
+  etf>0 ? (s+=w,  b.push({l:"ETF Inflows",   v:+w,  c:T.green}))
+        : (s-=w,  b.push({l:"ETF Outflows",  v:-w,  c:T.red}));
+  const cot = +d.cot_positioning;
+  cot>0 ? (s+=25, b.push({l:"COT Net Long",  v:+25, c:T.green}))
+        : (s-=25, b.push({l:"COT Net Short", v:-25, c:T.red}));
+  const ry = +d.real_yields;
+  if(ry<-.5){s+=20;b.push({l:"Yields Deep−",v:+20,c:T.green})}
+  else if(ry<0){s+=10;b.push({l:"Yields Mild−",v:+10,c:T.green})}
+  else if(ry<.5){s-=10;b.push({l:"Yields Mild+",v:-10,c:T.red})}
+  else{s-=20;b.push({l:"Yields High+",v:-20,c:T.red})}
+  if(d.usd_trend==="down"){s+=15;b.push({l:"USD Weak",v:+15,c:T.green})}
+  if(d.usd_trend==="up"){s-=15;b.push({l:"USD Strong",v:-15,c:T.red})}
+  if(d.gold_trend==="up"){s+=10;b.push({l:"Gold ↑",v:+10,c:T.green})}
+  if(d.gold_trend==="down"){s-=10;b.push({l:"Gold ↓",v:-10,c:T.red})}
+  return {score:Math.max(-100,Math.min(100,Math.round(s))),breakdown:b};
+}
+
+// ── API calls verso il backend locale (stesso container) ──────────────────
+const API = ""; // stesso origin → no CORS
+
+async function apiScore(data) {
+  const r = await fetch(`${API}/api/score`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error(`/api/score ${r.status}`);
+  return r.json();
+}
+
+async function apiAnalyze(data, mode) {
+  const r = await fetch(`${API}/api/analyze`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({...data, mode}),
+  });
+  if (!r.ok) { const t = await r.text(); throw new Error(t.slice(0,200)); }
+  return r.json();
+}
+
+async function apiConfig() {
+  const r = await fetch(`${API}/api/config`);
+  return r.json();
+}
+
+// ── Components ────────────────────────────────────────────────────────────
+function Panel({children, style={}}) {
+  return <div style={{background:T.panel,border:`1px solid ${T.border}`,borderRadius:5,...style}}>{children}</div>;
+}
+function Hdr({icon, label, sub, right}) {
+  return (
+    <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",borderBottom:`1px solid ${T.border}`,fontSize:9,letterSpacing:".14em",textTransform:"uppercase",color:T.dim}}>
+      {icon && <span style={{fontSize:12}}>{icon}</span>}
+      {label}
+      {sub && <span style={{fontSize:9,color:T.dim,marginLeft:2,letterSpacing:".04em",textTransform:"none"}}>{sub}</span>}
+      {right && <span style={{marginLeft:"auto"}}>{right}</span>}
+    </div>
+  );
+}
+function Dot({color, pulse=true}) {
+  return <div style={{width:6,height:6,borderRadius:"50%",background:color,flexShrink:0,animation:pulse?"pulse 2s infinite":"none"}} />;
+}
+
+function Ticker() {
+  const items = ["XAU/USD  2,341  +0.42%","GLD  216.84  +0.38%","DXY  104.23  -0.18%","10Y TIPS  1.84%","COT GOLD  +187K","◈ GOLD INTELLIGENCE  HA ADDON  ●"];
+  const all = [...items,...items];
+  return (
+    <div className="ticker-wrap">
+      <div className="ticker-track">
+        {all.map((t,i)=>(
+          <span key={i} style={{marginRight:50,fontSize:10,color:T.dim}}>
+            <span style={{color:T.gold}}>◈</span>{"  "}{t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Ring({score}) {
+  const r=52, c=2*Math.PI*r, dash=c*.75, pct=Math.abs(score)/100;
+  const col = score>30?T.green:score<-30?T.red:T.gold;
+  const lbl = score>60?"STRONG BULL":score>25?"BULL":score<-60?"STRONG BEAR":score<-25?"BEAR":"NEUTRAL";
+  return (
+    <div style={{textAlign:"center",padding:"14px 0"}}>
+      <div style={{position:"relative",width:120,height:120,margin:"0 auto"}}>
+        <svg viewBox="0 0 120 120" style={{transform:"rotate(135deg)"}}>
+          <circle cx="60" cy="60" r={r} fill="none" stroke={T.border} strokeWidth="7"
+            strokeDasharray={`${dash} ${c}`} strokeLinecap="round"/>
+          <circle cx="60" cy="60" r={r} fill="none" stroke={col} strokeWidth="7"
+            strokeDasharray={`${dash*pct} ${c}`} strokeLinecap="round"
+            style={{filter:`drop-shadow(0 0 5px ${col}88)`,transition:"stroke-dasharray .9s ease"}}/>
+        </svg>
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+          <div style={{fontSize:24,fontWeight:700,color:col,lineHeight:1}}>{score>0?"+":""}{score}</div>
+          <div style={{fontSize:8,color:T.muted,marginTop:2,letterSpacing:".1em"}}>SCORE</div>
+        </div>
+      </div>
+      <div style={{fontSize:10,fontWeight:600,color:col,letterSpacing:".14em",marginTop:2}}>{lbl}</div>
+    </div>
+  );
+}
+
+function Bar({item}) {
+  return (
+    <div style={{marginBottom:7}}>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:9.5,marginBottom:2}}>
+        <span style={{color:T.dim}}>{item.l}</span>
+        <span style={{color:item.c,fontWeight:600}}>{item.v>0?"+":""}{item.v}</span>
+      </div>
+      <div style={{height:2,background:T.border,borderRadius:2}}>
+        <div style={{height:"100%",width:`${Math.abs(item.v)}%`,background:item.c,
+          borderRadius:2,boxShadow:`0 0 4px ${item.c}44`,transition:"width 1s ease"}}/>
+      </div>
+    </div>
+  );
+}
+
+const STEPS_DUAL   = ["Input","Score","Signals","Perplexity","Claude","Done"];
+const STEPS_CLAUDE = ["Input","Score","Signals","Claude+Web","Done"];
+
+function Pipeline({steps, cur}) {
+  return (
+    <div style={{padding:"10px 14px"}}>
+      {steps.map((s,i)=>{
+        const st = i<cur?"done":i===cur?"active":"idle";
+        return (
+          <div className="step-row" key={i}>
+            <div className={`snum s-${st}`}>{st==="done"?"✓":st==="active"?"▶":i+1}</div>
+            <div style={{flex:1,fontSize:10.5,fontWeight:500,
+              color:st==="active"?T.gold:st==="done"?T.green:T.dim,marginTop:1}}>{s}</div>
+            {st==="active" && <div className="spinner"/>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Slider({label,min,max,step,value,onChange,fmt,unit=""}) {
+  return (
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",fontSize:9,marginBottom:5}}>
+        <span style={{color:T.dim,letterSpacing:".07em"}}>{label}</span>
+        <span style={{color:T.gold,fontWeight:600}}>{fmt?fmt(value):value}{unit}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e=>onChange(parseFloat(e.target.value))}/>
+    </div>
+  );
+}
+
+function ResultPanel({result, mode}) {
+  if (!result || result._skipped) return null;
+  const biasC = result.bias==="bullish"?"b-bull":result.bias==="bearish"?"b-bear":"b-neut";
+  const valCol = result.validation==="confirmed"?T.green:result.validation==="contradicted"?T.red:T.gold;
+  return (
+    <div className="fade-up">
+      <Panel style={{border:`1px solid ${T.gold}33`,background:`linear-gradient(135deg,${T.panel},#191208)`,marginTop:0}}>
+        <Hdr icon="◈" label="Claude — Synthesis"
+          sub={mode==="dual"?"validated via Perplexity":"validated via web_search"}
+          right={<span style={{fontSize:8,color:T.green}}>● LIVE</span>}/>
+        <div style={{padding:"14px 16px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <span className={`badge ${biasC}`}>
+              {result.bias==="bullish"?"▲":result.bias==="bearish"?"▼":"→"} {result.bias}
+            </span>
+            <div style={{flex:1}}>
+              <div style={{height:4,background:T.border,borderRadius:2}}>
+                <div style={{height:"100%",width:`${result.confidence}%`,borderRadius:2,transition:"width 1s",
+                  background:result.bias==="bullish"?T.green:result.bias==="bearish"?T.red:T.gold}}/>
+              </div>
+            </div>
+            <span style={{fontSize:18,fontWeight:700,
+              color:result.bias==="bullish"?T.green:result.bias==="bearish"?T.red:T.gold}}>
+              {result.confidence}%
+            </span>
+          </div>
+
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
+            <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,fontWeight:600,
+              background:valCol+"18",color:valCol,border:`1px solid ${valCol}44`}}>
+              {result.validation==="confirmed"?"✓ CONFIRMED":result.validation==="contradicted"?"✗ CONTRADICTED":"⚡ MIXED"}
+            </div>
+            {result.convergence_score!=null &&
+              <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,background:T.border+"44",color:T.dim,border:`1px solid ${T.border}`}}>
+                CONVERGENCE <span style={{color:T.text,fontWeight:600}}>{result.convergence_score}%</span>
+              </div>}
+            <div style={{padding:"3px 9px",borderRadius:2,fontSize:9.5,background:T.border+"44",color:T.dim,border:`1px solid ${T.border}`}}>
+              {result.time_horizon?.toUpperCase()}
+            </div>
+          </div>
+
+          <div style={{fontSize:11.5,lineHeight:1.75,color:T.text,fontFamily:SANS,
+            borderLeft:`2px solid ${T.gold}`,paddingLeft:12,marginBottom:14}}>
+            {result.summary}
+          </div>
+
+          {result.web_findings?.length > 0 &&
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:8.5,color:T.blue,letterSpacing:".1em",marginBottom:6}}>🔍 WEB FINDINGS</div>
+              {result.web_findings.map((f,i)=>(
+                <div key={i} style={{fontSize:10,color:T.dim,marginBottom:4,display:"flex",gap:6,lineHeight:1.55,fontFamily:SANS}}>
+                  <span style={{color:T.blue,flexShrink:0}}>▸</span>{f}
+                </div>
+              ))}
+            </div>}
+
+          <div className="g3">
+            <div>
+              <div style={{fontSize:8.5,color:T.green,letterSpacing:".1em",marginBottom:5}}>DRIVERS</div>
+              {result.drivers?.map((d,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4,lineHeight:1.5}}><span style={{color:T.green}}>+</span> {d}</div>)}
+            </div>
+            <div>
+              <div style={{fontSize:8.5,color:T.red,letterSpacing:".1em",marginBottom:5}}>RISKS</div>
+              {result.risk_factors?.map((r,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4,lineHeight:1.5}}><span style={{color:T.red}}>!</span> {r}</div>)}
+            </div>
+            <div>
+              <div style={{fontSize:8.5,color:T.gold,letterSpacing:".1em",marginBottom:5}}>CONFLICTS</div>
+              {result.contradictions?.length>0
+                ? result.contradictions.map((c,i)=><div key={i} style={{fontSize:9.5,color:T.dim,marginBottom:4}}><span style={{color:T.gold}}>⚡</span> {c}</div>)
+                : <div style={{fontSize:9.5,color:T.muted}}>None</div>}
+            </div>
+          </div>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────────────────
+const THRESHOLD = 30;
+
+export default function App() {
+  const [cfg,      setCfg]      = useState(null);
+  const [etf,      setEtf]      = useState(450);
+  const [cot,      setCot]      = useState(145000);
+  const [ry,       setRy]       = useState(-0.3);
+  const [usd,      setUsd]      = useState("down");
+  const [gt,       setGt]       = useState("up");
+  const [macro,    setMacro]    = useState("Fed hold expected");
+  const [step,     setStep]     = useState(-1);
+  const [loading,  setLoading]  = useState(false);
+  const [scoreD,   setScoreD]   = useState(null);
+  const [signals,  setSignals]  = useState([]);
+  const [result,   setResult]   = useState(null);
+  const [logs,     setLogs]     = useState([]);
+  const [error,    setError]    = useState(null);
+  const [usedMode, setUsedMode] = useState(null);
+
+  const data = {etf_flows:etf,cot_positioning:cot,real_yields:ry,usd_trend:usd,gold_trend:gt,macro_event:macro};
+  const live = computeScore(data);
+
+  const addLog = msg => setLogs(p=>[...p.slice(-10), `${new Date().toLocaleTimeString()} ${msg}`]);
+
+  // Carica config dal backend
+  useEffect(() => {
+    apiConfig().then(setCfg).catch(()=>setCfg({has_anthropic:false,has_perplexity:false,engine_mode:"auto",score_threshold:30}));
+  }, []);
+
+  const effectiveMode = cfg?.has_perplexity && cfg?.engine_mode!=="claude" ? "dual" : "claude";
+  const steps = effectiveMode==="dual" ? STEPS_DUAL : STEPS_CLAUDE;
+
+  const run = useCallback(async () => {
+    if (!cfg?.has_anthropic) { setError("Anthropic API key non configurata. Vai in Settings > Add-ons > Gold Intelligence > Configuration"); return; }
+    setLoading(true); setError(null); setResult(null); setScoreD(null); setSignals([]); setLogs([]);
+    setUsedMode(effectiveMode);
+
+    try {
+      setStep(0); addLog("▶ Validating…"); await sl(300);
+      setStep(1); addLog("⊕ Smart Money Score…"); await sl(350);
+
+      // Score via backend (validazione server-side)
+      const sd = await apiScore({...data, mode: effectiveMode});
+      setScoreD(sd.smart_money);
+      setSignals(sd.signals);
+      addLog(`✓ Score: ${sd.smart_money.score>0?"+":""}${sd.smart_money.score} [${Math.abs(sd.smart_money.score)>THRESHOLD?"SIGNAL":"NOISE"}]`);
+
+      setStep(2); await sl(300);
+
+      if (Math.abs(sd.smart_money.score) <= THRESHOLD) {
+        addLog(`⚡ Noise zone — LLM skipped`);
+        setResult({bias:"neutral",confidence:40,validation:"mixed",
+          summary:`Score ${sd.smart_money.score>0?"+":""}${sd.smart_money.score} sotto soglia ±${THRESHOLD}.`,
+          _skipped:true});
+        setStep(steps.length-1);
+        return;
+      }
+
+      if (effectiveMode==="dual") {
+        setStep(3); addLog("⬡ Perplexity sonar-pro…");
+      } else {
+        setStep(3); addLog("◈ Claude + web_search…");
+      }
+
+      const res = await apiAnalyze(data, effectiveMode);
+      setResult(res.analysis);
+      addLog(`✓ bias=${res.analysis?.bias} conf=${res.analysis?.confidence}% val=${res.analysis?.validation}`);
+      if (effectiveMode==="dual") setStep(4);
+      setStep(steps.length-1);
+      addLog("✓ Pipeline completa");
+    } catch(e) {
+      setError(e.message); addLog(`✗ ${e.message}`);
+    } finally { setLoading(false); }
+  }, [data, effectiveMode, cfg, steps.length]);
+
+  return (
+    <div style={{minHeight:"100vh"}}>
+      {/* Header */}
+      <div style={{background:T.panel,borderBottom:`1px solid ${T.border}`,padding:"0 20px",height:50,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:28,height:28,borderRadius:4,background:`linear-gradient(135deg,${T.goldD},${T.gold})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:T.bg}}>◈</div>
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:T.gold,letterSpacing:".04em"}}>GOLD INTELLIGENCE</div>
+            <div style={{fontSize:8.5,color:T.muted,letterSpacing:".1em"}}>HOME ASSISTANT ADD-ON · SMART MONEY + AI</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:16,fontSize:9,color:T.dim,alignItems:"center"}}>
+          {cfg && <>
+            <span style={{color:cfg.has_anthropic?T.green:T.red}}>{cfg.has_anthropic?"● Claude OK":"✗ No Claude key"}</span>
+            <span style={{color:cfg.has_perplexity?"#A78BFA":T.muted}}>{cfg.has_perplexity?"⬡ Perplexity ON":"○ Perplexity OFF"}</span>
+            <span style={{color:T.blue}}>engine: {effectiveMode}</span>
+          </>}
+        </div>
+      </div>
+
+      <Ticker/>
+
+      {/* Config notice */}
+      {cfg && !cfg.has_anthropic && (
+        <div style={{margin:"10px 14px 0"}}>
+          <div className="ha-notice">
+            ⚙ <strong>Setup richiesto:</strong> vai in <strong>Impostazioni → Add-on → Gold Intelligence → Configurazione</strong> e inserisci la <code>anthropic_api_key</code>.
+            La Perplexity key è opzionale — se assente usa Claude + web search nativo.
+          </div>
+        </div>
+      )}
+
+      {/* Main grid */}
+      <div style={{display:"grid",gridTemplateColumns:"210px 1fr 240px",gap:10,padding:"10px 14px"}}>
+
+        {/* Left */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <Panel>
+            <Hdr icon={<Dot color={T.green}/>} label="Pipeline"/>
+            <Pipeline steps={steps} cur={step}/>
+          </Panel>
+          <Panel>
+            <Hdr icon={<Dot color={T.gold}/>} label="Smart Money Score"/>
+            <Ring score={(scoreD||live).score}/>
+          </Panel>
+          <Panel>
+            <Hdr icon="⊞" label="Score Breakdown"/>
+            <div style={{padding:"10px 14px"}}>
+              {(scoreD||live).breakdown.map((b,i)=><Bar key={i} item={b}/>)}
+              <div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",fontSize:11}}>
+                <span style={{color:T.dim}}>TOTAL</span>
+                <span style={{fontWeight:700,fontSize:15,color:(scoreD||live).score>0?T.green:(scoreD||live).score<0?T.red:T.gold}}>
+                  {(scoreD||live).score>0?"+":""}{(scoreD||live).score}
+                </span>
+              </div>
+              <div style={{marginTop:7,fontSize:9,color:T.muted,lineHeight:1.8}}>
+                {Math.abs((scoreD||live).score)>THRESHOLD?"⚡ Sopra soglia → LLM attivato":"⊘ Noise zone → LLM skipped"}
+              </div>
+            </div>
+          </Panel>
+        </div>
+
+        {/* Center */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <Panel>
+            <Hdr icon="⊞" label="Market Data"/>
+            <div style={{padding:"14px 18px"}}>
+              <div className="g2" style={{gap:"0 28px"}}>
+                <Slider label="ETF FLOWS 7D (M USD)" min={-1000} max={1000} step={50} value={etf} onChange={setEtf} fmt={v=>(v>0?"+":"")+v.toFixed(0)}/>
+                <Slider label="COT NET POSITIONING"  min={-300000} max={300000} step={5000} value={cot} onChange={setCot} fmt={v=>(v>0?"+":"")+Math.round(v/1000)+"K"}/>
+                <Slider label="REAL YIELDS Δ7D"      min={-2} max={2} step={0.1} value={ry} onChange={setRy} fmt={v=>(v>0?"+":"")+v.toFixed(1)} unit="%"/>
+              </div>
+              <div className="g3" style={{marginTop:4}}>
+                {[
+                  {l:"USD TREND",   v:usd,   s:setUsd,   o:[["down","↓ Weak"],["up","↑ Strong"],["flat","→ Flat"]]},
+                  {l:"GOLD TREND",  v:gt,    s:setGt,    o:[["up","↑ Up"],["down","↓ Down"],["sideways","→ Side"]]},
+                  {l:"MACRO EVENT", v:macro, s:setMacro, o:[["Fed hold expected","Fed Hold"],["Fed cut expected","Fed Cut"],["Fed hike expected","Fed Hike"],["CPI above consensus","CPI Hot"],["CPI below consensus","CPI Cool"],["Risk-off geopolitical","Geo Risk"],["Strong NFP data","NFP+"],["Recession signals","Recession"]]},
+                ].map(({l,v,s,o})=>(
+                  <div key={l}>
+                    <div style={{fontSize:8.5,color:T.dim,letterSpacing:".08em",marginBottom:5}}>{l}</div>
+                    <select value={v} onChange={e=>s(e.target.value)}>{o.map(([val,lbl])=><option key={val} value={val}>{lbl}</option>)}</select>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:14}}>
+                <button className="run-btn" onClick={run} disabled={loading||!cfg?.has_anthropic}>
+                  {loading?"⟳  ANALISI IN CORSO…":!cfg?.has_anthropic?"⚠  CONFIGURA API KEY":"▶  ANALIZZA"}
+                </button>
+              </div>
+            </div>
+          </Panel>
+
+          {signals.length>0 &&
+            <div className="fade-up">
+              <Panel>
+                <Hdr icon="⊙" label="Signals estratti"/>
+                <div style={{padding:"10px 14px",display:"flex",flexDirection:"column",gap:4}}>
+                  {signals.map((s,i)=>(
+                    <div key={i} style={{fontSize:10.5,color:T.dim,fontFamily:SANS,lineHeight:1.6,display:"flex",gap:8}}>
+                      <span style={{color:T.gold,flexShrink:0,marginTop:1}}>▸</span>{s}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>}
+
+          <ResultPanel result={result} mode={usedMode}/>
+
+          {result?._skipped &&
+            <div style={{padding:"10px 14px",background:T.panel,border:`1px solid ${T.border}`,borderRadius:4,fontSize:10.5,color:T.muted,lineHeight:1.8}}>
+              ⚡ Score nel noise zone — LLM skipped. Muovi i parametri oltre la soglia ±{THRESHOLD} per attivare l'analisi AI.
+            </div>}
+          {error &&
+            <div style={{padding:"10px 14px",background:T.red+"10",border:`1px solid ${T.red}44`,borderRadius:4,fontSize:10.5,color:T.red}}>⚠ {error}</div>}
+        </div>
+
+        {/* Right */}
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <Panel>
+            <Hdr icon={<Dot color={T.green}/>} label="Execution Log"/>
+            <div style={{padding:"8px 12px",minHeight:110,fontFamily:MONO,fontSize:9.5,color:T.dim,lineHeight:2}}>
+              {logs.length===0
+                ? <span style={{color:T.muted}}>In attesa…</span>
+                : logs.map((l,i)=>(
+                    <div key={i} style={{color:l.includes("✓")?T.green:l.includes("✗")?T.red:l.includes("⬡")||l.includes("⚡")?T.gold:T.dim}}>{l}</div>
+                  ))}
+            </div>
+          </Panel>
+
+          <Panel>
+            <Hdr icon="◎" label="Engine Config"/>
+            <div style={{padding:"12px 14px",fontSize:9,color:T.dim,lineHeight:1.9}}>
+              {cfg ? <>
+                <div>Anthropic: <span style={{color:cfg.has_anthropic?T.green:T.red}}>{cfg.has_anthropic?"✓ OK":"✗ mancante"}</span></div>
+                <div>Perplexity: <span style={{color:cfg.has_perplexity?"#A78BFA":T.muted}}>{cfg.has_perplexity?"✓ attivo":"○ non configurato"}</span></div>
+                <div>Mode: <span style={{color:T.gold}}>{effectiveMode}</span></div>
+                <div>Soglia: <span style={{color:T.text}}>±{cfg.score_threshold}</span></div>
+              </> : <span style={{color:T.muted}}>Caricamento config…</span>}
+              <div style={{marginTop:10,padding:"8px 10px",background:T.bg,borderRadius:3,lineHeight:2}}>
+                ✓ Configurazione da HA Supervisor<br/>
+                ✓ API key mai esposte al browser<br/>
+                ✓ Fallback automatico<br/>
+                ✓ LLM solo se |score| &gt; soglia
+              </div>
+            </div>
+          </Panel>
+
+          {result && !result._skipped &&
+            <div className="fade-up">
+              <Panel>
+                <Hdr icon="{}" label="JSON Output"/>
+                <pre style={{padding:"10px 12px",fontSize:8.5,lineHeight:1.7,color:T.dim,overflow:"auto",maxHeight:250,fontFamily:MONO}}>
+                  {JSON.stringify({score:(scoreD||live).score,engine:usedMode,analysis:result},null,2)}
+                </pre>
+              </Panel>
+            </div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const sl = ms => new Promise(r=>setTimeout(r,ms));
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
