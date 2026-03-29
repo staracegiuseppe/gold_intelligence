@@ -1,5 +1,5 @@
 name: Gold Intelligence
-version: "1.1.1"
+version: "1.2.0"
 slug: gold_intelligence
 description: Analisi mercato oro XAU/USD — Smart Money Score + Claude AI + Report Email.
 url: https://github.com/staracegiuseppe/gold_intelligence
@@ -14,21 +14,24 @@ startup: application
 boot: auto
 init: false
 
+# Ingress — accesso SOLO tramite proxy HA, porta non esposta sulla LAN
 ingress: true
 ingress_port: 8099
+ingress_entry: /
 panel_icon: mdi:gold
 panel_title: Gold Intelligence
 
+# Disabilita API HA — l'addon non accede a HA, evita errori auth
+homeassistant_api: false
+auth_api: false
+
 options:
-  # ── AI ──────────────────────────────────────
   anthropic_api_key: ""
   perplexity_api_key: ""
   score_threshold: 30
   engine_mode: "auto"
-  # ── Scheduler ───────────────────────────────
   scheduler_interval_minutes: 60
   scheduler_enabled: true
-  # ── Email ───────────────────────────────────
   email_enabled: false
   email_to: ""
   email_from: ""
