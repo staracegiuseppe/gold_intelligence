@@ -10,6 +10,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY gold_engine.py .
+COPY mailer.py .
 COPY main.py .
 COPY index.html .
 COPY run.sh /run.sh
