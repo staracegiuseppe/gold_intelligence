@@ -50,15 +50,96 @@ def fetch_ohlcv(
     end: Optional[str] = None,
     interval: str = "1d",
 ) -> Optional[pd.DataFrame]:
+    """
+    Returns normalized OHLCV or None.
+    Implements a few fallbacks because yfinance can be flaky (empty/invalid JSON).
+    """
     try:
         import yfinance as yf
-
-        t = yf.Ticker(symbol)
-        df = t.history(period=period if start is None else None, start=start, end=end, interval=interval, auto_adjust=True)
-        return _ensure_ohlcv(df)
-    except Exception as e:
-        log.warning("%s: yfinance fetch failed: %s", symbol, e)
+    except ImportError:
+        log.error("yfinance not installed")
         return None
+
+    # Retry/backoff: avoids failing the whole run on transient Yahoo errors.
+    attempts = 3
+    for i in range(attempts):
+        try:
+            df: Optional[pd.DataFrame] = None
+            if start is not None or end is not None:
+                # Avoid passing start/end=None.
+                df = yf.download(
+                    symbol,
+                    start=start,
+                    end=end,
+                    interval=interval,
+                    auto_adjust=True,
+                    actions=False,
+                    period=None,
+                    progress=False,
+                    threads=False,
+                )
+            else:
+                df = yf.download(
+                    symbol,
+                    period=period,
+                    interval=interval,
+                    auto_adjust=True,
+                    actions=False,
+                    progress=False,
+                    threads=False,
+                )
+
+            df = _ensure_ohlcv(df)
+            if df is not None and len(df) > 10:
+                return df
+
+            # Fallback: retry with auto_adjust=False
+            df2: Optional[pd.DataFrame] = None
+            if start is not None or end is not None:
+                df2 = yf.download(
+                    symbol,
+                    start=start,
+                    end=end,
+                    interval=interval,
+                    auto_adjust=False,
+                    actions=False,
+                    period=None,
+                    progress=False,
+                    threads=False,
+                )
+            else:
+                df2 = yf.download(
+                    symbol,
+                    period=period,
+                    interval=interval,
+                    auto_adjust=False,
+                    actions=False,
+                    progress=False,
+                    threads=False,
+                )
+            df2 = _ensure_ohlcv(df2)
+            if df2 is not None and len(df2) > 10:
+                return df2
+
+            # Period fallback (only when not using explicit start/end).
+            if (start is None and end is None) and i < attempts - 1:
+                period_fallback = "1y" if period == "2y" else ("6mo" if period == "1y" else period)
+                if period_fallback != period:
+                    period = period_fallback
+
+        except Exception as e:
+            log.warning("%s: yfinance fetch failed (attempt %d/%d): %s", symbol, i + 1, attempts, e)
+
+        # Small backoff (avoid huge delays).
+        if i < attempts - 1:
+            try:
+                import time
+
+                time.sleep(0.7 * (i + 1))
+            except Exception:
+                pass
+
+    return None
 
 
 def _rsi(close: pd.Series, period: int = 14) -> pd.Series:
@@ -273,7 +354,8 @@ def fetch_snapshot(symbol: str, *, period: str = "2y", interval: str = "1d") -> 
     if df is None:
         return None
     df_ind = compute_indicators(df)
-    if len(df_ind) < 60:
+    # Need enough bars for SMA50/BB20/ATR14 + rolling S/R(20).
+    if len(df_ind) < 55:
         return None
     return _snapshot(symbol, df_ind)
 
