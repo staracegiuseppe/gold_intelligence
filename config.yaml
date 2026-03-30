@@ -1,5 +1,5 @@
 name: Gold Intelligence
-version: "1.1.4"
+version: "1.5.0"
 slug: gold_intelligence
 description: Analisi mercato oro XAU/USD con Smart Money Score e Claude AI.
 url: https://github.com/staracegiuseppe/gold_intelligence
@@ -18,15 +18,42 @@ ingress: true
 ingress_port: 8099
 panel_icon: mdi:gold
 panel_title: Gold Intelligence
+ingress_entry: /
+
+
+homeassistant_api: false
+auth_api: false
 
 options:
   anthropic_api_key: ""
   perplexity_api_key: ""
   score_threshold: 30
   engine_mode: "auto"
+  scheduler_interval_minutes: 60
+  scheduler_enabled: true
+  email_enabled: false
+  email_to: ""
+  email_from: ""
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  smtp_user: ""
+  smtp_password: ""
+  smtp_tls: true
+  email_min_score: 40
 
 schema:
   anthropic_api_key: str
-  perplexity_api_key: str?
+  perplexity_api_key: str
   score_threshold: int
-  engine_mode: list(auto|dual|claude)
+  engine_mode: str
+  scheduler_interval_minutes: int
+  scheduler_enabled: bool
+  email_enabled: bool
+  email_to: str
+  email_from: str
+  smtp_host: str
+  smtp_port: int
+  smtp_user: str
+  smtp_password: str
+  smtp_tls: bool
+  email_min_score: int
