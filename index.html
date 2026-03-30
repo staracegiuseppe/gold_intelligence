@@ -1,980 +1,617 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Gold Intelligence</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#07090D;color:#D0DFF8;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0B0E16}::-webkit-scrollbar-thumb{background:#253050;border-radius:2px}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.app{display:flex;flex-direction:column;min-height:100vh}
-.hdr{background:#0B0E16;border-bottom:1px solid #192030;padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.tabs{display:flex;gap:0;background:#07090D;border-bottom:1px solid #192030;flex-shrink:0}
-.tab{padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:.08em;cursor:pointer;border-bottom:2px solid transparent;color:#6880A0;transition:all .2s;text-transform:uppercase}
-.tab.active{color:#C8A020;border-bottom-color:#C8A020;background:#0B0E16}
-.tab:hover:not(.active){color:#D0DFF8}
-.tab-content{display:none;flex:1;overflow-y:auto}
-.tab-content.active{display:block}
-/* panels */
-.panel{background:#0B0E16;border:1px solid #192030;border-radius:6px;overflow:hidden;margin-bottom:12px}
-.ph{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid #192030;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#6880A0;font-weight:600}
-.pb{padding:12px 14px}
-.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.dot-g{background:#18B85A;animation:pulse 1.8s infinite}
-.dot-y{background:#C8A020;animation:pulse 2.2s infinite}
-/* inputs */
-.inp-lbl{display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px;color:#6880A0}
-.inp-lbl span:last-child{color:#C8A020;font-weight:700;font-family:monospace}
-input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:#192030;outline:none;cursor:pointer;border-radius:2px}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#C8A020;cursor:pointer}
-select{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none;width:100%;cursor:pointer}
-select:focus{border-color:#C8A02066}
-/* buttons */
-.btn-run{width:100%;padding:12px;background:linear-gradient(135deg,#7A5C0A,#C8A020);color:#07090D;border:none;border-radius:5px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s}
-.btn-run:hover:not(:disabled){box-shadow:0 0 24px #C8A02055}
-.btn-run:disabled{background:#253050;color:#6880A0;cursor:not-allowed}
-.btn-sm{padding:5px 12px;background:transparent;color:#C8A020;border:1px solid #C8A02055;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.06em}
-.btn-sm:hover{background:#C8A02018}
-/* spinner */
-.spin{width:13px;height:13px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.spin.on{display:block}
-/* badge */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
-.b-bull{background:#18B85A18;color:#18B85A;border:1px solid #18B85A44}
-.b-bear{background:#E0383818;color:#E03838;border:1px solid #E0383844}
-.b-neut{background:#C8A02018;color:#C8A020;border:1px solid #C8A02044}
-.b-ok{background:#18B85A18;color:#18B85A;border:1px solid #18B85A33}
-.b-no{background:#E0383818;color:#E03838;border:1px solid #E0383833}
-/* score ring */
-.ring-wrap{position:relative;width:140px;height:140px;margin:0 auto 10px}
-.ring-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.ring-val{font-size:32px;font-weight:700;font-family:monospace;line-height:1}
-/* factor bars */
-.fbar-row{margin-bottom:8px}
-.fbar-hdr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;color:#6880A0}
-.fbar-hdr b{font-weight:700}
-.fbar-track{height:4px;background:#192030;border-radius:2px}
-.fbar-fill{height:100%;border-radius:2px;transition:width 1s ease}
-/* asset cards */
-.asset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;padding:14px}
-.asset-card{background:#07090D;border:1px solid #192030;border-radius:6px;padding:12px;cursor:pointer;transition:all .2s;animation:fadeIn .3s ease}
-.asset-card:hover{border-color:#C8A02066;background:#0B0E16}
-.asset-card.bull{border-left:3px solid #18B85A}
-.asset-card.bear{border-left:3px solid #E03838}
-.asset-card.neut{border-left:3px solid #C8A020}
-/* signal items */
-.sig-item{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #19203022;font-size:11px;color:#7A90B0;line-height:1.5}
-.sig-item:last-child{border-bottom:none}
-/* result */
-.res-card{animation:fadeIn .4s ease}
-.summary-box{font-size:12px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:12px;margin:12px 0}
-.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px}
-.three-title{font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
-.three-item{font-size:10px;color:#7A90B0;margin-bottom:4px;line-height:1.5;display:flex;gap:4px}
-/* log */
-.log-box{font-family:monospace;font-size:10px;line-height:1.9;padding:10px 12px;min-height:80px;max-height:180px;overflow-y:auto;color:#6880A0}
-.log-ok{color:#18B85A}.log-err{color:#E03838}.log-ai{color:#C8A020}.log-web{color:#2E7FE8}
-/* ticker */
-.tick-bar{height:26px;background:#0B0E16;border-bottom:1px solid #192030;overflow:hidden;white-space:nowrap;display:flex;align-items:center}
-.tick-track{display:inline-flex;animation:ticker 50s linear infinite;font-size:10px;color:#6880A0}
-/* grid layouts */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-/* progress */
-.pipe-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #19203022}
-.pipe-row:last-child{border-bottom:none}
-.pnum{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
-.pn-i{background:#192030;color:#6880A0}.pn-a{background:#C8A02033;color:#C8A020;border:1px solid #C8A02055}.pn-d{background:#18B85A22;color:#18B85A;border:1px solid #18B85A44}
-/* error box */
-.err-box{padding:10px 14px;background:#E0383810;border:1px solid #E0383844;border-radius:4px;font-size:11px;color:#E03838;line-height:1.7}
-/* countdown */
-.countdown{font-size:11px;color:#6880A0;font-family:monospace}
-/* detail panel */
-.detail-overlay{display:none;position:fixed;inset:0;background:#07090Dcc;z-index:100;overflow-y:auto}
-.detail-overlay.open{display:block}
-.detail-box{background:#0B0E16;border:1px solid #192030;border-radius:8px;max-width:700px;margin:40px auto;padding:0;animation:fadeIn .3s ease}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Multi-Market Intelligence</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:#07090D;color:#D0DFF8;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0B0E16}::-webkit-scrollbar-thumb{background:#253050;border-radius:2px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .app{display:flex;flex-direction:column;min-height:100vh}
+    .hdr{background:#0B0E16;border-bottom:1px solid #192030;padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .tabs{display:flex;gap:0;background:#07090D;border-bottom:1px solid #192030;flex-shrink:0}
+    .tab{padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:.08em;cursor:pointer;border-bottom:2px solid transparent;color:#6880A0;transition:all .2s;text-transform:uppercase}
+    .tab.active{color:#C8A020;border-bottom-color:#C8A020;background:#0B0E16}
+    .tab:hover:not(.active){color:#D0DFF8}
+    .tab-content{display:none;flex:1;overflow-y:auto}
+    .tab-content.active{display:block}
+    .panel{background:#0B0E16;border:1px solid #192030;border-radius:6px;overflow:hidden;margin:12px 12px 12px}
+    .ph{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #192030;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#6880A0;font-weight:700}
+    .pb{padding:12px 14px}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:3px;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+    .b-bull{background:#18B85A18;color:#18B85A;border:1px solid #18B85A44}
+    .b-bear{background:#E0383818;color:#E03838;border:1px solid #E0383844}
+    .b-wl{background:#C8A02018;color:#C8A020;border:1px solid #C8A02044}
+    .b-ok{background:#18B85A18;color:#18B85A;border:1px solid #18B85A33}
+    .b-no{background:#E0383818;color:#E03838;border:1px solid #E0383833}
+
+    select,input[type=range]{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none;cursor:pointer}
+    input[type=text]{background:#07090D;color:#D0DFF8;border:1px solid #192030;border-radius:4px;padding:6px 8px;font-size:11px;outline:none}
+    .btn{padding:10px 14px;background:linear-gradient(135deg,#7A5C0A,#C8A020);color:#07090D;border:none;border-radius:5px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+    .btn:disabled{background:#253050;color:#6880A0;cursor:not-allowed}
+    .btn-sm{padding:7px 12px;background:transparent;color:#C8A020;border:1px solid #C8A02055;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.04em}
+    .btn-sm:hover{background:#C8A02018}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:12px}
+    .asset-card{background:#07090D;border:1px solid #192030;border-radius:6px;padding:12px;cursor:pointer;transition:all .2s;animation:fadeIn .2s ease}
+    .asset-card:hover{border-color:#C8A02066;background:#0B0E16}
+    .asset-card.bull{border-left:3px solid #18B85A}
+    .asset-card.bear{border-left:3px solid #E03838}
+    .asset-card.wl{border-left:3px solid #C8A020}
+    .asset-card.no{border-left:3px solid #6880A0}
+    .log{font-family:monospace;font-size:10px;line-height:1.8;padding:10px 12px;min-height:50px;max-height:180px;overflow-y:auto;color:#6880A0}
+    .err{padding:10px 14px;background:#E0383810;border:1px solid #E0383844;border-radius:4px;font-size:11px;color:#E03838;line-height:1.7;margin:0 12px}
+    .filters{display:flex;gap:12px;flex-wrap:wrap;padding:12px 12px 0}
+    .filters .f{min-width:180px}
+    .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #19203022}
+    .kv:last-child{border-bottom:none}
+    .k{color:#6880A0;font-size:11px}
+    .v{color:#D0DFF8;font-weight:700;font-family:monospace;font-size:11px}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    th,td{padding:8px 8px;border-bottom:1px solid #19203022;vertical-align:top}
+    th{color:#6880A0;text-transform:uppercase;letter-spacing:.06em;font-size:9px}
+    td{color:#D0DFF8}
+
+    .detail-overlay{display:none;position:fixed;inset:0;background:#07090Dcc;z-index:100;overflow-y:auto}
+    .detail-overlay.open{display:block}
+    .detail-box{background:#0B0E16;border:1px solid #192030;border-radius:8px;max-width:860px;margin:26px auto;padding:0;animation:fadeIn .2s ease}
+    .detail-head{padding:12px 16px;border-bottom:1px solid #192030;display:flex;align-items:center;gap:10px}
+    .detail-body{padding:14px 16px}
+    .split{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
+    @media (max-width:860px){.split{grid-template-columns:1fr}}
+    .mono{font-family:monospace}
+    .subtle{color:#6880A0}
+  </style>
 </head>
 <body>
 <div class="app">
-
-<!-- HEADER -->
-<div class="hdr">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:28px;height:28px;border-radius:5px;background:linear-gradient(135deg,#7A5C0A,#C8A020);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#07090D">◈</div>
-    <div>
-      <div style="font-size:13px;font-weight:700;color:#C8A020;letter-spacing:.04em">GOLD INTELLIGENCE</div>
-      <div style="font-size:8px;color:#6880A0;letter-spacing:.1em">SMART MONEY · CLAUDE AI · HOME ASSISTANT</div>
-    </div>
-  </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <span class="badge b-no" id="hdr-key-badge">● No API Key</span>
-    <span style="font-size:10px;color:#6880A0" id="hdr-engine">caricamento...</span>
-  </div>
-</div>
-
-<!-- TICKER -->
-<div class="tick-bar">
-  <div class="tick-track">
-    <span style="margin-right:60px">◈&nbsp;&nbsp;Gold Intelligence v2 · Smart Money Score + Claude AI · Analisi Oraria ETF/Azioni</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fattori: ETF Flows (30pt) · COT (25pt) · Real Yields (20pt) · USD (15pt) · Trend (10pt)</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;Scheduler orario attivo · 10 asset monitorati · LLM solo su segnali forti</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;Gold Intelligence v2 · Smart Money Score + Claude AI · Analisi Oraria ETF/Azioni</span>
-    <span style="margin-right:60px">⊕&nbsp;&nbsp;Fattori: ETF Flows (30pt) · COT (25pt) · Real Yields (20pt) · USD (15pt) · Trend (10pt)</span>
-    <span style="margin-right:60px">◈&nbsp;&nbsp;Scheduler orario attivo · 10 asset monitorati · LLM solo su segnali forti</span>
-  </div>
-</div>
-
-<!-- TABS -->
-<div class="tabs">
-  <div class="tab active" onclick="showTab('gold')">◈ Analisi Oro</div>
-  <div class="tab" onclick="showTab('scanner')">⊕ Scanner ETF/Azioni</div>
-  <div class="tab" onclick="showTab('scheduler')">⏱ Scheduler Orario</div>
-  <div class="tab" onclick="showTab('settings')">⚙ Impostazioni</div>
-</div>
-
-<!-- ═══════════════ TAB 1: ANALISI ORO ═══════════════ -->
-<div class="tab-content active" id="tab-gold">
-<div style="display:grid;grid-template-columns:240px 1fr 260px;gap:12px;padding:12px 16px">
-
-  <!-- LEFT -->
-  <div>
-    <div class="panel">
-      <div class="ph"><div class="dot dot-y"></div>Smart Money Score</div>
-      <div style="text-align:center;padding:16px 14px">
-        <div class="ring-wrap" id="ring-wrap">
-          <svg id="ring-svg" viewBox="0 0 140 140" width="140" height="140">
-            <circle cx="70" cy="70" r="58" fill="none" stroke="#192030" stroke-width="9"
-              stroke-dasharray="273 365" stroke-dashoffset="-46" stroke-linecap="round"/>
-            <circle cx="70" cy="70" r="58" fill="none" id="ring-arc"
-              stroke="#C8A020" stroke-width="9"
-              stroke-dasharray="0 365" stroke-dashoffset="-46" stroke-linecap="round"
-              style="transition:stroke-dasharray 1s ease,stroke .4s"/>
-          </svg>
-          <div class="ring-center">
-            <div class="ring-val" id="ring-val" style="color:#C8A020">0</div>
-            <div style="font-size:8px;color:#6880A0;margin-top:2px;letter-spacing:.1em">/100</div>
-          </div>
-        </div>
-        <div class="badge b-neut" id="ring-tag">NEUTRALE</div>
-        <div style="margin-top:8px;font-size:10px;color:#6880A0" id="ring-note">Imposta parametri</div>
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:28px;height:28px;border-radius:5px;background:linear-gradient(135deg,#7A5C0A,#C8A020);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#07090D">◈</div>
+      <div>
+        <div style="font-size:13px;font-weight:900;color:#C8A020;letter-spacing:.02em">Multi-Market Intelligence</div>
+        <div style="font-size:8px;color:#6880A0;letter-spacing:.1em">Quant signals + Backtesting (real OHLCV)</div>
       </div>
     </div>
-    <div class="panel">
-      <div class="ph">⊞ Fattori</div>
-      <div class="pb" id="factors-panel"><div style="color:#6880A044;font-size:11px">Muovi gli slider...</div></div>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="dot dot-g"></div>Pipeline</div>
-      <div id="pipeline-panel" style="padding:8px 14px"></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span class="badge b-no" id="hdr-key-badge">● No API Key</span>
+      <span style="font-size:10px;color:#6880A0" id="hdr-status">caricamento…</span>
     </div>
   </div>
 
-  <!-- CENTER -->
-  <div>
-    <!-- Chart -->
-    <div class="panel">
-      <div class="ph"><span style="color:#C8A020">◈</span>XAU/USD Simulato · 7 giorni</div>
-      <div style="padding:10px 14px 6px">
-        <canvas id="price-chart"></canvas>
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('scanner')">⊕ Scanner</div>
+    <div class="tab" onclick="showTab('backtest')">⟲ Backtest</div>
+    <div class="tab" onclick="showTab('scheduler')">⏱ Scheduler</div>
+    <div class="tab" onclick="showTab('settings')">⚙ Settings</div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="tab-content active" id="tab-scanner">
+    <div class="filters">
+      <div class="f">
+        <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Mercato</div>
+        <select id="filter-market">
+          <option value="All">All</option>
+          <option value="Italy">Italy</option>
+          <option value="Europe">Europe</option>
+          <option value="USA">USA</option>
+        </select>
+      </div>
+      <div class="f">
+        <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Asset type</div>
+        <select id="filter-type">
+          <option value="All">All</option>
+          <option value="stock">Stock</option>
+          <option value="etf">ETF</option>
+          <option value="index">Index</option>
+        </select>
+      </div>
+      <div class="f" style="min-width:220px">
+        <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Cerca simbolo</div>
+        <input type="text" id="filter-symbol" placeholder="AAPL, SPY, FTSEMIB.MI…" />
+      </div>
+      <div class="f" style="min-width:180px;align-self:flex-end">
+        <button class="btn-sm" onclick="loadSignals()">↻ Aggiorna</button>
       </div>
     </div>
-    <!-- Inputs -->
-    <div class="panel">
-      <div class="ph">⊞ Parametri</div>
+
+    <div class="panel" style="margin-top:10px">
+      <div class="ph">◈ Segnali aggiornati</div>
       <div class="pb">
-        <div class="g2">
-          <div style="margin-bottom:14px">
-            <div class="inp-lbl"><span>ETF FLOWS 7D (M USD)</span><span id="v-etf">+450</span></div>
-            <input type="range" id="r-etf" min="-1000" max="1000" step="50" value="450">
-          </div>
-          <div style="margin-bottom:14px">
-            <div class="inp-lbl"><span>COT NET POSITIONING</span><span id="v-cot">+145K</span></div>
-            <input type="range" id="r-cot" min="-300000" max="300000" step="5000" value="145000">
-          </div>
-          <div style="margin-bottom:14px">
-            <div class="inp-lbl"><span>REAL YIELDS Δ7D</span><span id="v-ry">-0.3%</span></div>
-            <input type="range" id="r-ry" min="-2" max="2" step="0.1" value="-0.3">
-          </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="subtle mono" id="scan-meta">—</div>
+          <div class="subtle mono" id="scan-count">—</div>
         </div>
-        <div class="g3" style="margin-bottom:12px">
-          <div>
-            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">USD TREND</div>
-            <select id="s-usd"><option value="down">↓ Weak</option><option value="up">↑ Strong</option><option value="flat">→ Flat</option></select>
+        <div id="signals-grid" class="grid"></div>
+        <div id="scan-err" class="err" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backtest -->
+  <div class="tab-content" id="tab-backtest">
+    <div class="panel">
+      <div class="ph">⟲ Backtest storico</div>
+      <div class="pb">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+          <div style="min-width:260px">
+            <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Simbolo</div>
+            <select id="bt-symbol"></select>
           </div>
-          <div>
-            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">GOLD TREND</div>
-            <select id="s-gt"><option value="up">↑ Up</option><option value="down">↓ Down</option><option value="sideways">→ Sideways</option></select>
-          </div>
-          <div>
-            <div style="font-size:9px;color:#6880A0;letter-spacing:.08em;margin-bottom:5px">MACRO EVENT</div>
-            <select id="s-macro">
-              <option>Fed hold expected</option><option>Fed cut expected</option>
-              <option>Fed hike expected</option><option>CPI above consensus</option>
-              <option>CPI below consensus</option><option>Risk-off geopolitical</option>
-              <option>Strong NFP data</option><option>Recession signals</option>
+          <div style="min-width:180px">
+            <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Periodo</div>
+            <select id="bt-period">
+              <option value="1y">1y</option>
+              <option value="2y" selected>2y</option>
+              <option value="3y">3y</option>
+              <option value="5y">5y</option>
             </select>
           </div>
+          <div style="min-width:220px">
+            <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Max holding (days)</div>
+            <select id="bt-hold">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+            </select>
+          </div>
+          <div style="min-width:160px">
+            <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Short</div>
+            <select id="bt-short">
+              <option value="true" selected>Allow</option>
+              <option value="false">Disabled</option>
+            </select>
+          </div>
+          <button class="btn" onclick="runBacktest()">▶ Run</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;padding-top:10px;border-top:1px solid #192030">
-          <div style="font-size:9px;color:#6880A0;white-space:nowrap">ENGINE</div>
-          <select id="s-mode"><option value="auto">Auto (da config)</option><option value="claude">Claude + Web</option><option value="dual">Perplexity + Claude</option></select>
-        </div>
-        <button class="btn-run" id="run-btn" onclick="doAnalyze()">
-          <div class="spin" id="btn-spin"></div>
-          <span id="btn-lbl">▶ ANALIZZA CON AI</span>
-        </button>
-        <div id="key-warn" style="display:none;margin-top:8px;font-size:10px;color:#E03838">⚠ Configura anthropic_api_key nelle impostazioni addon</div>
-      </div>
-    </div>
-    <!-- Signals -->
-    <div class="panel">
-      <div class="ph">⊙ Segnali Estratti</div>
-      <div id="signals-list" style="padding:8px 14px"><div style="color:#6880A044;font-size:11px">Muovi gli slider per vedere i segnali...</div></div>
-    </div>
-    <!-- Result -->
-    <div class="panel res-card" id="result-card" style="display:none">
-      <div class="ph"><div class="dot dot-y"></div>Analisi Claude AI<span id="res-engine" style="margin-left:4px;font-size:9px;color:#7A5C0A"></span><span style="margin-left:auto;font-size:9px;color:#18B85A">● LIVE</span></div>
-      <div class="pb">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <span class="badge" id="res-bias">→ NEUTRALE</span>
-          <div style="flex:1;height:5px;background:#192030;border-radius:3px"><div id="res-conf-bar" style="height:100%;border-radius:3px;transition:width 1s;background:#C8A020;width:0%"></div></div>
-          <span id="res-conf-val" style="font-size:18px;font-weight:700;font-family:monospace;color:#C8A020">0%</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-          <span class="badge" id="res-val-badge">⚡ MISTO</span>
-          <span class="badge b-neut" id="res-conv-badge">CONV —</span>
-          <span class="badge b-neut" id="res-horizon-badge">—</span>
-        </div>
-        <div class="summary-box" id="res-summary">—</div>
-        <div id="res-findings" style="display:none;margin-bottom:10px">
-          <div style="font-size:9px;color:#2E7FE8;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">🔍 Web Findings</div>
-          <div id="res-findings-list"></div>
-        </div>
-        <div class="three">
-          <div><div class="three-title" style="color:#18B85A">Drivers</div><div id="res-drivers"></div></div>
-          <div><div class="three-title" style="color:#E03838">Rischi</div><div id="res-risks"></div></div>
-          <div><div class="three-title" style="color:#C8A020">Conflitti</div><div id="res-conflicts"></div></div>
-        </div>
-      </div>
-    </div>
-    <div id="noise-msg" style="display:none;padding:10px 14px;background:#0B0E16;border:1px solid #192030;border-radius:6px;font-size:11px;color:#6880A0">⚡ Score sotto soglia — muovi i parametri oltre ±30 per attivare l'AI.</div>
-    <div class="err-box" id="err-box" style="display:none"></div>
-  </div>
 
-  <!-- RIGHT -->
-  <div>
-    <div class="panel">
-      <div class="ph">◈ Radar Fattori</div>
-      <div style="padding:12px 14px"><canvas id="radar-chart"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="dot dot-g"></div>Log Esecuzione</div>
-      <div class="log-box" id="log-box"><div style="color:#6880A044">In attesa...</div></div>
-    </div>
-    <div class="panel" id="json-panel" style="display:none">
-      <div class="ph">{} Output JSON</div>
-      <pre id="json-out" style="padding:10px 12px;font-size:9px;line-height:1.7;color:#6880A0;overflow:auto;max-height:200px;font-family:monospace"></pre>
-    </div>
-    <div class="panel">
-      <div class="ph">◎ Pesi Score</div>
-      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2.1">
-        <div>ETF Flows <span style="float:right;color:#C8A020">max 30 pt</span></div>
-        <div>COT Positioning <span style="float:right;color:#C8A020">25 pt</span></div>
-        <div>Real Yields <span style="float:right;color:#C8A020">20 pt</span></div>
-        <div>USD Trend <span style="float:right;color:#C8A020">15 pt</span></div>
-        <div>Gold Trend <span style="float:right;color:#C8A020">10 pt</span></div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #192030">
-          LLM attivato se |score| &gt; soglia<br>
-          <span style="color:#C8A020" id="info-threshold">soglia: ±30</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+        <div id="bt-err" class="err" style="display:none"></div>
 
-<!-- ═══════════════ TAB 2: SCANNER ═══════════════ -->
-<div class="tab-content" id="tab-scanner">
-<div style="padding:14px 16px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div>
-      <div style="font-size:14px;font-weight:600;color:#D0DFF8">Scanner ETF & Azioni</div>
-      <div style="font-size:10px;color:#6880A0;margin-top:2px">Analisi Smart Money Score · ordinati per forza segnale</div>
-    </div>
-    <button class="btn-sm" onclick="loadScanner()">↻ Aggiorna</button>
-  </div>
-  <div id="scanner-loading" style="text-align:center;padding:40px;color:#6880A0;font-size:12px">Caricamento analisi...</div>
-  <div id="scanner-meta" style="display:none;margin-bottom:12px;font-size:10px;color:#6880A0;display:flex;gap:16px;flex-wrap:wrap">
-    <span>Ultimo aggiornamento: <span id="sc-last" style="color:#C8A020">—</span></span>
-    <span>Prossimo: <span id="sc-next" style="color:#C8A020">—</span></span>
-    <span id="sc-running-badge" style="display:none" class="badge b-neut">⟳ In esecuzione...</span>
-  </div>
-  <div class="asset-grid" id="scanner-grid"></div>
-  <div id="scanner-err" class="err-box" style="display:none"></div>
-</div>
-</div>
+        <div class="split">
+          <div class="panel" style="margin:0;background:#07090D;border-radius:6px">
+            <div class="ph">◎ Metriche</div>
+            <div class="pb">
+              <div class="kv"><div class="k">Total trades</div><div class="v" id="bt-total-trades">—</div></div>
+              <div class="kv"><div class="k">Win rate</div><div class="v" id="bt-win-rate">—</div></div>
+              <div class="kv"><div class="k">Expectancy</div><div class="v" id="bt-expectancy">—</div></div>
+              <div class="kv"><div class="k">Profit factor</div><div class="v" id="bt-profit-factor">—</div></div>
+              <div class="kv"><div class="k">Max drawdown</div><div class="v" id="bt-max-dd">—</div></div>
+              <div class="kv"><div class="k">Total return</div><div class="v" id="bt-total-return">—</div></div>
+              <div class="kv"><div class="k">CAGR</div><div class="v" id="bt-cagr">—</div></div>
+              <div class="kv"><div class="k">Sharpe</div><div class="v" id="bt-sharpe">—</div></div>
+              <div class="kv"><div class="k">Benchmark (B&H)</div><div class="v" id="bt-benchmark">—</div></div>
+            </div>
+          </div>
 
-<!-- ═══════════════ TAB 3: SCHEDULER ═══════════════ -->
-<div class="tab-content" id="tab-scheduler">
-<div style="padding:14px 16px">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:800px">
-    <div class="panel">
-      <div class="ph"><div class="dot dot-g"></div>Stato Scheduler</div>
-      <div class="pb" style="font-size:11px;line-height:2.1;color:#6880A0">
-        <div>Stato: <span id="sch-status" style="color:#C8A020">—</span></div>
-        <div>Ultimo run: <span id="sch-last" style="color:#D0DFF8">—</span></div>
-        <div>Prossimo run: <span id="sch-next" style="color:#D0DFF8">—</span></div>
-        <div>Asset analizzati: <span id="sch-count" style="color:#C8A020">—</span></div>
-        <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn-sm" onclick="forceRefresh()">▶ Esegui Ora</button>
-          <button class="btn-sm" onclick="loadScheduler()">↻ Ricarica Stato</button>
-        </div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="ph">◎ Come Funziona</div>
-      <div class="pb" style="font-size:10px;color:#6880A0;line-height:2">
-        <div><span style="color:#C8A020">⊕</span> Analisi ogni <strong style="color:#D0DFF8">60 minuti</strong> automatica</div>
-        <div><span style="color:#2E7FE8">◈</span> 10 asset: ETF oro, indici, azioni tech</div>
-        <div><span style="color:#18B85A">✓</span> Score calcolato per ogni asset</div>
-        <div><span style="color:#C8A020">🤖</span> AI chiamata solo se |score| &gt; soglia</div>
-        <div><span style="color:#6880A0">💾</span> Risultati in memoria · reset al riavvio</div>
-        <div style="margin-top:8px;padding:8px 10px;background:#07090D;border-radius:4px;font-size:9px;line-height:2">
-          Asset monitorati:<br>
-          GLD · IAU · SPY · QQQ · XLE<br>
-          TLT · AAPL · NVDA · MSFT · XOM
-        </div>
-      </div>
-    </div>
-  </div>
-  <div style="margin-top:12px;max-width:800px">
-    <div class="panel">
-      <div class="ph">⊞ Top Opportunità (ultimo run)</div>
-      <div id="sch-top-list" style="padding:8px 14px;color:#6880A044;font-size:11px">Nessun dato — attendi il primo run o clicca "Esegui Ora"</div>
-    </div>
-  </div>
-</div>
-</div>
-
-
-<!-- ═══════════════ TAB 4: IMPOSTAZIONI ═══════════════ -->
-<div class="tab-content" id="tab-settings">
-<div style="padding:14px 16px;max-width:750px">
-
-  <!-- Email -->
-  <div class="panel">
-    <div class="ph"><span style="color:#C8A020">✉</span>Configurazione Email Report</div>
-    <div class="pb">
-      <div style="font-size:11px;color:#6880A0;line-height:1.8;margin-bottom:14px;padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030">
-        ℹ Le impostazioni email si configurano in <b style="color:#D0DFF8">Home Assistant → Add-on → Gold Intelligence → Configurazione</b>.<br>
-        Qui puoi vedere lo stato attuale e inviare una email di test.
-      </div>
-
-      <div class="g2" style="margin-bottom:16px">
-        <div>
-          <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;margin-bottom:8px">STATO EMAIL</div>
-          <div id="email-status-box" style="padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-size:11px;line-height:2;color:#6880A0">
-            Caricamento...
+          <div class="panel" style="margin:0;background:#07090D;border-radius:6px">
+            <div class="ph">◎ Trade log</div>
+            <div class="pb" style="padding-top:8px">
+              <div style="max-height:320px;overflow:auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Side</th>
+                      <th>Entry</th>
+                      <th>Exit</th>
+                      <th>Exit</th>
+                      <th>Ret</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bt-trades-body"></tbody>
+                </table>
+              </div>
+              <div class="subtle" style="font-size:11px;margin-top:10px" id="bt-trades-note">—</div>
+            </div>
           </div>
         </div>
-        <div>
-          <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;margin-bottom:8px">CONFIGURAZIONE ATTIVA</div>
-          <div id="email-config-box" style="padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-size:11px;line-height:2;color:#6880A0">
-            Caricamento...
-          </div>
-        </div>
-      </div>
-
-      <!-- Test email button -->
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <button class="btn-sm" onclick="sendTestEmail()" id="test-email-btn">✉ Invia Email di Test</button>
-        <button class="btn-sm" onclick="loadSettings()">↻ Ricarica Stato</button>
-        <span id="test-email-result" style="font-size:11px;display:none"></span>
       </div>
     </div>
   </div>
 
   <!-- Scheduler -->
-  <div class="panel">
-    <div class="ph"><span style="color:#18B85A">⏱</span>Scheduler Automatico</div>
-    <div class="pb">
-      <div id="sched-config-box" style="font-size:11px;color:#6880A0;line-height:2.2">Caricamento...</div>
-    </div>
-  </div>
+  <div class="tab-content" id="tab-scheduler">
+    <div class="panel">
+      <div class="ph">⏱ Stato scanner</div>
+      <div class="pb">
+        <div class="kv"><div class="k">Status</div><div class="v" id="sch-status">—</div></div>
+        <div class="kv"><div class="k">Ultimo run</div><div class="v" id="sch-last">—</div></div>
+        <div class="kv"><div class="k">Prossimo run</div><div class="v" id="sch-next">—</div></div>
+        <div class="kv"><div class="k">Asset analizzati</div><div class="v" id="sch-count">—</div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <button class="btn-sm" onclick="forceRefresh()">▶ Esegui Ora</button>
+          <button class="btn-sm" onclick="loadScheduler()">↻ Ricarica</button>
+        </div>
 
-  <!-- Guide Gmail -->
-  <div class="panel">
-    <div class="ph"><span style="color:#2E7FE8">?</span>Guida: Gmail con App Password</div>
-    <div class="pb" style="font-size:11px;color:#6880A0;line-height:2">
-      <div style="margin-bottom:6px;color:#D0DFF8;font-weight:600">Come configurare Gmail:</div>
-      <div>1. Vai su <b style="color:#2E7FE8">myaccount.google.com → Sicurezza</b></div>
-      <div>2. Abilita <b style="color:#D0DFF8">Verifica in 2 passaggi</b></div>
-      <div>3. Cerca <b style="color:#D0DFF8">Password per le app</b> → crea password per "Mail"</div>
-      <div>4. Usa la password generata (16 caratteri) come <code style="color:#C8A020">smtp_password</code></div>
-      <div style="margin-top:10px;padding:10px 12px;background:#07090D;border-radius:5px;border:1px solid #192030;font-family:monospace;font-size:10px;line-height:2;color:#C8A020">
-        smtp_host: smtp.gmail.com<br>
-        smtp_port: 587<br>
-        smtp_user: tua@gmail.com<br>
-        smtp_password: xxxx xxxx xxxx xxxx<br>
-        smtp_tls: true
-      </div>
-      <div style="margin-top:10px;color:#D0DFF8;font-weight:600">Per altri provider:</div>
-      <div style="font-family:monospace;font-size:10px;margin-top:4px;color:#6880A0">
-        Outlook: smtp-mail.outlook.com:587<br>
-        Yahoo:   smtp.mail.yahoo.com:587<br>
-        iCloud:  smtp.mail.me.com:587
+        <div style="margin-top:14px">
+          <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Top segnali</div>
+          <div id="sch-top-list"></div>
+        </div>
       </div>
     </div>
   </div>
 
-</div>
-</div>
-
-</div><!-- /app -->
-
-<!-- DETAIL OVERLAY -->
-<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
-  <div class="detail-box">
-    <div class="ph" style="padding:12px 16px">
-      <span id="detail-title" style="font-size:12px;color:#D0DFF8;text-transform:none;letter-spacing:0;font-weight:600"></span>
-      <button onclick="closeDetail()" style="margin-left:auto;background:none;border:none;color:#6880A0;cursor:pointer;font-size:16px">✕</button>
+  <!-- Settings -->
+  <div class="tab-content" id="tab-settings">
+    <div class="panel">
+      <div class="ph">⚙ Impostazioni</div>
+      <div class="pb">
+        <div class="kv"><div class="k">Engine version</div><div class="v" id="set-version">—</div></div>
+        <div class="kv"><div class="k">Score threshold</div><div class="v" id="set-threshold">—</div></div>
+        <div class="kv"><div class="k">Scheduler</div><div class="v" id="set-scheduler">—</div></div>
+        <div class="kv"><div class="k">Email enabled</div><div class="v" id="set-email">—</div></div>
+        <div class="kv"><div class="k">LLM (Anthropic)</div><div class="v" id="set-anthropic">—</div></div>
+      </div>
     </div>
-    <div class="pb" id="detail-body" style="padding:16px"></div>
+  </div>
+
+  <!-- Detail overlay -->
+  <div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+    <div class="detail-box" onclick="event.stopPropagation()">
+      <div class="detail-head">
+        <div id="detail-title" style="font-weight:900;color:#D0DFF8">—</div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span class="badge" id="detail-action-badge">—</span>
+          <button class="btn-sm" onclick="closeDetail()">✕</button>
+        </div>
+      </div>
+      <div class="detail-body" id="detail-body"></div>
+    </div>
   </div>
 </div>
 
 <script>
-// ─── BASE URL: usa percorso relativo per HA Ingress ───────────────────────
 function apiUrl(path) {
-  // Prende il base path dalla finestra (funziona con HA Ingress)
   const base = window.location.pathname.replace(/\/[^/]*$/, '');
   return base + path;
 }
 
-// ─── STATE ────────────────────────────────────────────────────────────────
-let CFG = {has_anthropic:false, has_perplexity:false, engine_mode:'auto', score_threshold:30};
-let loading = false;
-let chartsReady = false;
+let CFG = {has_anthropic:false, score_threshold:35};
+let ASSETS = [];
+let SIGNALS = [];
 
-// ─── QUANT ENGINE ─────────────────────────────────────────────────────────
-function computeScore(d) {
-  let s=0; const b=[];
-  const etf=+d.etf_flows, w=Math.min(30, Math.round(Math.abs(etf)/30));
-  etf>0?(s+=w,b.push({l:'ETF Inflows',v:+w,c:'#18B85A',i:'▲'})):(s-=w,b.push({l:'ETF Outflows',v:-w,c:'#E03838',i:'▼'}));
-  const cot=+d.cot_positioning;
-  cot>0?(s+=25,b.push({l:'COT Net Long',v:+25,c:'#18B85A',i:'▲'})):(s-=25,b.push({l:'COT Net Short',v:-25,c:'#E03838',i:'▼'}));
-  const ry=+d.real_yields;
-  if(ry<-.5){s+=20;b.push({l:'Yields Deep−',v:+20,c:'#18B85A',i:'▲'})}
-  else if(ry<0){s+=10;b.push({l:'Yields Mild−',v:+10,c:'#18B85A',i:'▲'})}
-  else if(ry<.5){s-=10;b.push({l:'Yields Mild+',v:-10,c:'#E03838',i:'▼'})}
-  else{s-=20;b.push({l:'Yields High+',v:-20,c:'#E03838',i:'▼'})}
-  if(d.usd_trend==='down'){s+=15;b.push({l:'USD Weak',v:+15,c:'#18B85A',i:'▲'})}
-  else if(d.usd_trend==='up'){s-=15;b.push({l:'USD Strong',v:-15,c:'#E03838',i:'▼'})}
-  if(d.gold_trend==='up'){s+=10;b.push({l:'Gold ↑Trend',v:+10,c:'#18B85A',i:'▲'})}
-  else if(d.gold_trend==='down'){s-=10;b.push({l:'Gold ↓Trend',v:-10,c:'#E03838',i:'▼'})}
-  return {score:Math.max(-100,Math.min(100,Math.round(s))), breakdown:b};
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.tab')[['scanner','backtest','scheduler','settings'].indexOf(id)].classList.add('active');
+  if (id === 'scanner') loadSignals();
+  if (id === 'scheduler') loadScheduler();
+  if (id === 'settings') loadSettings();
 }
 
-function enrichSignals(d) {
-  const etf=+d.etf_flows, cot=+d.cot_positioning, ry=+d.real_yields;
-  return [
-    etf>500?`ETF accumulation aggressiva +${etf}M USD — domanda istituzionale forte`:
-    etf>0?`ETF inflows moderati +${etf}M USD`:
-    etf>-500?`ETF outflows ${etf}M USD — riduzione rischio`:
-    `Distribuzione ETF pesante ${etf}M USD — uscita istituzionale`,
-    cot>150000?`Hedge funds estremamente net long +${(cot/1e3).toFixed(0)}K contratti`:
-    cot>0?`Hedge funds net long +${(cot/1e3).toFixed(0)}K`:
-    `Hedge funds net short ${(cot/1e3).toFixed(0)}K — bias ribassista`,
-    ry<-.5?`Real yields profondamente negativi ${ry}% — forte tailwind oro`:
-    ry<0?`Real yields negativi ${ry}% — supporto moderato`:
-    `Real yields positivi +${ry}% — headwind oro`,
-    {down:'USD in downtrend — bid meccanico sull\'oro',up:'USD in rafforzamento — frena XAU/USD',flat:'USD piatto — fattore neutro'}[d.usd_trend],
-    `Contesto macro: ${d.macro_event}`,
-  ].filter(Boolean);
+function actionBadge(action) {
+  if (action === 'BUY') return {cls:'b-bull', txt:'▲ BUY'};
+  if (action === 'SELL') return {cls:'b-bear', txt:'▼ SELL'};
+  if (action === 'WATCHLIST') return {cls:'b-wl', txt:'◷ WATCHLIST'};
+  if (action === 'NO_DATA') return {cls:'b-no', txt:'NO_DATA'};
+  return {cls:'b-ok', txt:'HOLD'};
 }
 
-function getData() {
-  return {
-    etf_flows:      +document.getElementById('r-etf').value,
-    cot_positioning:+document.getElementById('r-cot').value,
-    real_yields:    +document.getElementById('r-ry').value,
-    usd_trend:      document.getElementById('s-usd').value,
-    gold_trend:     document.getElementById('s-gt').value,
-    macro_event:    document.getElementById('s-macro').value,
-  };
+function hasRealBadge(has_real_data) {
+  return has_real_data ? '<span class="badge b-ok">REAL</span>' : '<span class="badge b-no">NO_DATA</span>';
 }
 
-// ─── SLIDER UPDATE ────────────────────────────────────────────────────────
-function onUpdate() {
-  const d = getData();
-  document.getElementById('v-etf').textContent = (d.etf_flows>0?'+':'')+d.etf_flows;
-  document.getElementById('v-cot').textContent = (d.cot_positioning>0?'+':'')+Math.round(d.cot_positioning/1000)+'K';
-  document.getElementById('v-ry').textContent  = (d.real_yields>0?'+':'')+d.real_yields.toFixed(1)+'%';
-  const {score, breakdown} = computeScore(d);
-  updateRing(score);
-  updateFactors(breakdown);
-  updateSignals(enrichSignals(d));
-  if (chartsReady) { drawPrice(score); drawRadar(breakdown); }
+function fmt(x) {
+  if (x === null || x === undefined) return '—';
+  if (typeof x === 'number') return (Math.abs(x) >= 100 ? x.toFixed(2) : x.toFixed(3)).replace(/\.?0+$/,'');
+  return String(x);
 }
 
-function updateRing(score) {
-  const col = score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
-  const arc = 273 * Math.abs(score)/100;
-  document.getElementById('ring-arc').style.strokeDasharray = arc+' 365';
-  document.getElementById('ring-arc').style.stroke = col;
-  document.getElementById('ring-val').textContent = (score>0?'+':'')+score;
-  document.getElementById('ring-val').style.color = col;
-  const lbl = score>60?'STRONG BULL':score>25?'BULL':score<-60?'STRONG BEAR':score<-25?'BEAR':'NEUTRALE';
-  const tag = document.getElementById('ring-tag');
-  tag.textContent = lbl;
-  tag.className = 'badge '+(score>25?'b-bull':score<-25?'b-bear':'b-neut');
-  const thr = CFG.score_threshold||30;
-  const note = document.getElementById('ring-note');
-  if(Math.abs(score)>thr){note.textContent=`⚡ Segnale attivo → AI si attiva`;note.style.color='#18B85A';}
-  else{note.textContent=`⊘ Sotto soglia ±${thr}`;note.style.color='#6880A0';}
+function matchesFilters(sig) {
+  const m = document.getElementById('filter-market').value;
+  const t = document.getElementById('filter-type').value;
+  const q = (document.getElementById('filter-symbol').value || '').trim().toUpperCase();
+  if (m !== 'All' && sig.market !== m) return false;
+  if (t !== 'All' && sig.asset_type !== t) return false;
+  if (q && !String(sig.symbol).toUpperCase().includes(q)) return false;
+  return true;
 }
 
-function updateFactors(b) {
-  document.getElementById('factors-panel').innerHTML = b.map(f=>`
-    <div class="fbar-row">
-      <div class="fbar-hdr"><span style="color:${f.c}">${f.i} ${f.l}</span><b style="color:${f.c}">${f.v>0?'+':''}${f.v}</b></div>
-      <div class="fbar-track"><div class="fbar-fill" style="width:${Math.abs(f.v)}%;background:${f.c};box-shadow:0 0 4px ${f.c}55"></div></div>
-    </div>`).join('')+`
-    <div style="margin-top:10px;padding-top:8px;border-top:1px solid #192030;display:flex;justify-content:space-between;font-size:12px">
-      <span style="color:#6880A0;font-weight:600">TOTALE</span>
-      <span style="font-weight:700;font-size:14px;font-family:monospace;color:${b.reduce((a,x)=>a+x.v,0)>0?'#18B85A':b.reduce((a,x)=>a+x.v,0)<0?'#E03838':'#C8A020'}">
-        ${b.reduce((a,x)=>a+x.v,0)>0?'+':''}${b.reduce((a,x)=>a+x.v,0)}
-      </span></div>`;
-}
+async function loadSignals() {
+  const grid = document.getElementById('signals-grid');
+  const err = document.getElementById('scan-err');
+  grid.innerHTML = '';
+  err.style.display = 'none';
+  err.textContent = '';
 
-function updateSignals(sigs) {
-  document.getElementById('signals-list').innerHTML = sigs.map(s=>`
-    <div class="sig-item"><span style="color:#C8A020;flex-shrink:0">▸</span><span>${s}</span></div>`).join('');
-}
-
-// ─── PIPELINE ─────────────────────────────────────────────────────────────
-const STEPS = ['Validazione','Score Quant','Segnali','Grounding Web','Sintesi AI','Completato'];
-function setPipe(step) {
-  document.getElementById('pipeline-panel').innerHTML = STEPS.map((s,i)=>{
-    const st = i<step?'d':i===step?'a':'i';
-    const col = st==='a'?'#C8A020':st==='d'?'#18B85A':'#6880A0';
-    return `<div class="pipe-row">
-      <div class="pnum pn-${st==='d'?'d':st==='a'?'a':'i'}">${st==='d'?'✓':st==='a'?'▶':i+1}</div>
-      <div style="font-size:10px;color:${col};flex:1">${s}</div>
-      ${st==='a'?'<div style="width:10px;height:10px;border:2px solid #C8A02033;border-top-color:#C8A020;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>':''}
-    </div>`;
-  }).join('');
-}
-
-// ─── LOG ──────────────────────────────────────────────────────────────────
-function addLog(msg, cls='') {
-  const el = document.getElementById('log-box');
-  if(el.children.length===1&&el.children[0].style.color==='rgba(104, 128, 160, 0.267)') el.innerHTML='';
-  const d = document.createElement('div');
-  d.className = 'log-'+cls;
-  d.textContent = new Date().toLocaleTimeString('it')+' '+msg;
-  el.appendChild(d); el.scrollTop=el.scrollHeight;
-}
-
-// ─── CHARTS ───────────────────────────────────────────────────────────────
-function drawPrice(score) {
-  const canvas = document.getElementById('price-chart');
-  if(!canvas) return;
-  const W = canvas.parentElement.clientWidth - 28;
-  if(W < 50) return;
-  canvas.width = W; canvas.height = 130;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,130);
-  const n=40, trend=score/280; let p=2310;
-  const pts=[]; for(let i=0;i<n;i++){p+=(Math.random()-.47+trend)*9;pts.push(Math.max(2100,Math.min(2600,p)));}
-  const mn=Math.min(...pts)-8, mx=Math.max(...pts)+8;
-  const toY=v=>130-((v-mn)/(mx-mn))*106-12, toX=i=>(i/(n-1))*W;
-  const col=score>30?'#18B85A':score<-30?'#E03838':'#C8A020';
-  const bg=ctx.createLinearGradient(0,0,0,130);bg.addColorStop(0,col+'28');bg.addColorStop(1,'transparent');
-  ctx.fillStyle=bg;ctx.beginPath();ctx.moveTo(toX(0),130);
-  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)));ctx.lineTo(W,130);ctx.closePath();ctx.fill();
-  ctx.strokeStyle=col;ctx.lineWidth=2;ctx.lineJoin='round';ctx.beginPath();
-  pts.forEach((v,i)=>i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)));ctx.stroke();
-  [0,n-1].forEach(i=>{ctx.fillStyle=col;ctx.beginPath();ctx.arc(toX(i),toY(pts[i]),4,0,Math.PI*2);ctx.fill();});
-  ctx.fillStyle='#D0DFF8';ctx.font='bold 11px monospace';ctx.textAlign='center';
-  ctx.fillText('XAU/USD ~'+pts[n-1].toFixed(0),W/2,13);
-  ctx.fillStyle='#6880A0';ctx.font='9px monospace';ctx.textAlign='left';
-  ctx.fillText(mn.toFixed(0),4,128);ctx.fillText(mx.toFixed(0),4,12);
-  ctx.textAlign='right';ctx.fillText('7gg →',W-4,128);
-}
-
-function drawRadar(breakdown) {
-  const canvas = document.getElementById('radar-chart');
-  if(!canvas) return;
-  const W = canvas.parentElement.clientWidth - 28;
-  if(W < 50) return;
-  canvas.width = W; canvas.height = 180;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0,0,W,180);
-  const cx=W/2, cy=95, r=65;
-  const factors=[
-    {l:'ETF',  v:breakdown.find(b=>b.l.includes('ETF'))?.v||0,  max:30},
-    {l:'COT',  v:breakdown.find(b=>b.l.includes('COT'))?.v||0,  max:25},
-    {l:'Yields',v:breakdown.find(b=>b.l.includes('Yield'))?.v||0,max:20},
-    {l:'USD',  v:breakdown.find(b=>b.l.includes('USD'))?.v||0,  max:15},
-    {l:'Trend',v:breakdown.find(b=>b.l.includes('Trend'))?.v||0,max:10},
-  ];
-  const n=factors.length, angle=i=>(i/n)*Math.PI*2-Math.PI/2;
-  [.25,.5,.75,1].forEach(p=>{
-    ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.setLineDash([2,3]);ctx.beginPath();
-    factors.forEach((_,i)=>{const a=angle(i),x=cx+Math.cos(a)*r*p,y=cy+Math.sin(a)*r*p;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-    ctx.closePath();ctx.stroke();
-  });
-  ctx.setLineDash([]);
-  factors.forEach((_,i)=>{const a=angle(i);ctx.strokeStyle='#192030';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.stroke();});
-  ctx.beginPath();
-  factors.forEach((f,i)=>{const a=angle(i),pct=(f.v+f.max)/(f.max*2),x=cx+Math.cos(a)*r*pct,y=cy+Math.sin(a)*r*pct;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
-  ctx.closePath();ctx.fillStyle='#C8A02033';ctx.fill();ctx.strokeStyle='#C8A020';ctx.lineWidth=2;ctx.stroke();
-  ctx.textAlign='center';
-  factors.forEach((f,i)=>{const a=angle(i),lx=cx+Math.cos(a)*(r+17),ly=cy+Math.sin(a)*(r+17)+4;ctx.fillStyle=f.v>0?'#18B85A':f.v<0?'#E03838':'#6880A0';ctx.font='bold 9px sans-serif';ctx.fillText(f.l,lx,ly);});
-}
-
-// ─── ANALYZE ──────────────────────────────────────────────────────────────
-async function doAnalyze() {
-  if(loading) return;
-  const d = getData();
-  const {score} = computeScore(d);
-  const thr = CFG.score_threshold||30;
-  // Reset UI
-  document.getElementById('result-card').style.display='none';
-  document.getElementById('noise-msg').style.display='none';
-  document.getElementById('err-box').style.display='none';
-  document.getElementById('json-panel').style.display='none';
-  document.getElementById('log-box').innerHTML='';
-  loading=true;
-  document.getElementById('run-btn').disabled=true;
-  document.getElementById('btn-spin').classList.add('on');
-  document.getElementById('btn-lbl').textContent='IN CORSO...';
-  // Steps
-  setPipe(0); addLog('▶ Validazione...'); await sl(250);
-  setPipe(1); addLog('⊕ Smart Money Score...',); await sl(350);
-  addLog(`✓ Score: ${score>0?'+':''}${score}/100`,'ok');
-  setPipe(2); await sl(250);
-  addLog(`✓ ${enrichSignals(d).length} segnali`,'ok');
-  if(Math.abs(score)<=thr){addLog('⚡ Sotto soglia — AI skippata');setPipe(5);document.getElementById('noise-msg').style.display='block';resetBtn();return;}
-  setPipe(3);
-  const mode = document.getElementById('s-mode').value;
-  addLog(`◈ Claude API (mode=${mode})...`,'ai');
   try {
-    const res = await fetch(apiUrl('/api/analyze'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({...d, mode}),
-    });
-    const text = await res.text();
-    if(!res.ok) throw new Error(`HTTP ${res.status}: ${text.slice(0,120)}`);
-    const data = JSON.parse(text);
-    addLog('✓ Risposta ricevuta','ok');
-    setPipe(4);
-    const a = data.analysis||{};
-    addLog(`✓ bias=${a.bias} conf=${a.confidence}% val=${a.validation}`,'ok');
-    if(data.web_context?.web_searches_done?.length)
-      addLog(`🔍 ${data.web_context.web_searches_done.length} ricerche web`,'web');
-    setPipe(5);
-    showResult(a, data.engine_used, computeScore(d).score);
-  } catch(e) {
-    addLog('✗ '+e.message,'err');
-    const eb=document.getElementById('err-box');
-    eb.textContent='⚠ '+e.message;eb.style.display='block';
-    setPipe(-1);
-  }
-  resetBtn();
-}
-
-function showResult(a, engine, score) {
-  if(!a||a._skipped){document.getElementById('noise-msg').style.display='block';return;}
-  const card=document.getElementById('result-card');card.style.display='block';
-  const col=a.bias==='bullish'?'#18B85A':a.bias==='bearish'?'#E03838':'#C8A020';
-  const icon=a.bias==='bullish'?'▲ BULLISH':a.bias==='bearish'?'▼ BEARISH':'→ NEUTRALE';
-  document.getElementById('res-engine').textContent=engine==='dual'?'· Perplexity+Claude':'· Claude+web';
-  const bb=document.getElementById('res-bias');bb.textContent=icon;
-  bb.className='badge '+(a.bias==='bullish'?'b-bull':a.bias==='bearish'?'b-bear':'b-neut');
-  const conf=a.confidence||0;
-  document.getElementById('res-conf-bar').style.width=conf+'%';document.getElementById('res-conf-bar').style.background=col;
-  document.getElementById('res-conf-val').textContent=conf+'%';document.getElementById('res-conf-val').style.color=col;
-  const vc=a.validation==='confirmed'?'#18B85A':a.validation==='contradicted'?'#E03838':'#C8A020';
-  const vt=a.validation==='confirmed'?'✓ WEB CONFERMATO':a.validation==='contradicted'?'✗ CONTRADDETTO':'⚡ MISTO';
-  const vb=document.getElementById('res-val-badge');vb.textContent=vt;vb.style.background=vc+'18';vb.style.color=vc;vb.style.border=`1px solid ${vc}44`;
-  document.getElementById('res-conv-badge').textContent='CONV '+( a.convergence_score||'—')+'%';
-  document.getElementById('res-horizon-badge').textContent=(a.time_horizon||'—').toUpperCase();
-  document.getElementById('res-summary').textContent=a.summary||'—';
-  const wf=a.web_findings||[];
-  if(wf.length>0){document.getElementById('res-findings').style.display='block';document.getElementById('res-findings-list').innerHTML=wf.map(f=>`<div style="font-size:10.5px;color:#7A90B0;margin-bottom:4px;display:flex;gap:6px;line-height:1.5"><span style="color:#2E7FE8">▸</span><span>${f}</span></div>`).join('');}
-  document.getElementById('res-drivers').innerHTML=(a.drivers||[]).map(d=>`<div class="three-item"><span style="color:#18B85A">+</span><span>${d}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
-  document.getElementById('res-risks').innerHTML=(a.risk_factors||[]).map(r=>`<div class="three-item"><span style="color:#E03838">!</span><span>${r}</span></div>`).join('')||'<div style="color:#6880A044;font-size:10px">—</div>';
-  document.getElementById('res-conflicts').innerHTML=(a.contradictions||[]).length>0?(a.contradictions||[]).map(c=>`<div class="three-item"><span style="color:#C8A020">⚡</span><span>${c}</span></div>`).join(''):'<div style="color:#18B85A;font-size:10px">Nessuno</div>';
-  document.getElementById('json-panel').style.display='block';
-  document.getElementById('json-out').textContent=JSON.stringify({engine,score,analysis:a},null,2);
-}
-
-function resetBtn(){loading=false;document.getElementById('run-btn').disabled=!CFG.has_anthropic;document.getElementById('btn-spin').classList.remove('on');document.getElementById('btn-lbl').textContent='▶ ANALIZZA CON AI';}
-
-// ─── SCANNER ──────────────────────────────────────────────────────────────
-async function loadScanner() {
-  document.getElementById('scanner-loading').style.display='block';
-  document.getElementById('scanner-grid').innerHTML='';
-  document.getElementById('scanner-err').style.display='none';
-  try {
-    const res = await fetch(apiUrl('/api/scheduled'));
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    const res = await fetch(apiUrl('/api/signals'));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    document.getElementById('scanner-loading').style.display='none';
-    const meta=document.getElementById('scanner-meta');meta.style.display='flex';
-    document.getElementById('sc-last').textContent=data.last_run?new Date(data.last_run).toLocaleString('it'):'—';
-    document.getElementById('sc-next').textContent=data.next_run?new Date(data.next_run).toLocaleString('it'):'—';
-    document.getElementById('sc-running-badge').style.display=data.running?'inline-flex':'none';
-    if(!data.results||data.results.length===0){
-      document.getElementById('scanner-grid').innerHTML='<div style="grid-column:1/-1;padding:30px;text-align:center;color:#6880A0;font-size:12px">Nessun dato — clicca "Esegui Ora" nello Scheduler</div>';
+    SIGNALS = data.signals || [];
+
+    const meta = data.last_run ? new Date(data.last_run).toLocaleString('it') : '—';
+    document.getElementById('scan-meta').textContent = 'Ultimo: ' + meta;
+    document.getElementById('scan-count').textContent = 'Segnali: ' + (SIGNALS.length || 0);
+
+    const filtered = SIGNALS.filter(matchesFilters);
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="subtle" style="padding:28px">Nessun asset per i filtri correnti.</div>';
       return;
     }
-    document.getElementById('scanner-grid').innerHTML=data.results.map((r,i)=>assetCard(r,i)).join('');
-  } catch(e) {
-    document.getElementById('scanner-loading').style.display='none';
-    const eb=document.getElementById('scanner-err');eb.textContent='⚠ '+e.message;eb.style.display='block';
+
+    grid.innerHTML = filtered.map((s, idx) => assetCard(s)).join('');
+  } catch (e) {
+    err.style.display = 'block';
+    err.textContent = '⚠ ' + e.message;
   }
 }
 
-function assetCard(r, idx) {
-  const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
-  const cls=r.score>30?'bull':r.score<-30?'bear':'neut';
-  const bias=r.analysis?.bias||'—';
-  const conf=r.analysis?.confidence||'—';
-  const delay=idx*0.05;
-  return `<div class="asset-card ${cls}" style="animation-delay:${delay}s" onclick="showAssetDetail(${idx})">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#D0DFF8">${r.symbol}</div>
-        <div style="font-size:9px;color:#6880A0;margin-top:1px">${r.name}</div>
+function assetCard(s) {
+  const b = actionBadge(s.action);
+  const real = s.has_real_data ? '<span class="badge b-ok" style="font-size:9px;margin-left:auto">REAL</span>' : '<span class="badge b-no" style="font-size:9px;margin-left:auto">NO_DATA</span>';
+  return `
+    <div class="asset-card ${s.action === 'BUY' ? 'bull' : s.action === 'SELL' ? 'bear' : s.action === 'WATCHLIST' ? 'wl' : s.action === 'NO_DATA' ? 'no' : ''}"
+         onclick="showDetail('${s.symbol}')">
+      <div style="display:flex;align-items:flex-start;gap:10px;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div style="font-weight:900;color:#D0DFF8;font-size:14px">${s.symbol}</div>
+          <div style="font-size:10px;color:#6880A0;margin-top:2px">${escapeHtml(s.name || '')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:900;font-family:monospace;color:${s.action === 'BUY' ? '#18B85A' : s.action === 'SELL' ? '#E03838' : '#C8A020'}">${s.score > 0 ? '+' : ''}${fmt(s.score)}</div>
+          <div style="font-size:8px;color:#6880A0">/100</div>
+        </div>
       </div>
-      <div style="text-align:right">
-        <div style="font-size:18px;font-weight:700;font-family:monospace;color:${col}">${r.score>0?'+':''}${r.score}</div>
-        <div style="font-size:8px;color:#6880A0">/100</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
+        <span class="badge ${b.cls}" style="font-size:9px">${b.txt}</span>
+        ${real}
       </div>
-    </div>
-    <div style="height:3px;background:#192030;border-radius:2px;margin-bottom:8px">
-      <div style="height:100%;width:${Math.abs(r.score)}%;background:${col};border-radius:2px"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:10px">
-      <span class="badge ${cls==='bull'?'b-bull':cls==='bear'?'b-bear':'b-neut'}" style="font-size:9px">${r.score>30?'▲ BULL':r.score<-30?'▼ BEAR':'→ NEUT'}</span>
-      ${r.analysis?`<span style="color:#6880A0">conf <span style="color:${col}">${conf}%</span></span>`:`<span style="color:#6880A044;font-size:9px">no AI analysis</span>`}
-    </div>
-    ${r.analysis?.summary?`<div style="font-size:9px;color:#7A90B0;margin-top:8px;line-height:1.5;border-top:1px solid #19203022;padding-top:6px">${r.analysis.summary.slice(0,90)}...</div>`:''}
-  </div>`;
-}
-
-let scannerResults = [];
-async function loadScannerData() {
-  const res = await fetch(apiUrl('/api/scheduled'));
-  const data = await res.json();
-  scannerResults = data.results||[];
-  return data;
-}
-
-function showAssetDetail(idx) {
-  if(!scannerResults.length) return;
-  const r = scannerResults[idx]; if(!r) return;
-  const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
-  document.getElementById('detail-title').textContent=`${r.symbol} — ${r.name}`;
-  document.getElementById('detail-body').innerHTML=`
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-      <div style="font-size:32px;font-weight:700;font-family:monospace;color:${col}">${r.score>0?'+':''}${r.score}</div>
-      <span class="badge ${r.score>30?'b-bull':r.score<-30?'b-bear':'b-neut'}">${r.score>30?'▲ BULLISH':r.score<-30?'▼ BEARISH':'→ NEUTRALE'}</span>
-      <span style="font-size:10px;color:#6880A0">${r.type.toUpperCase()} · ${r.sector.toUpperCase()}</span>
-    </div>
-    <div style="margin-bottom:16px">
-      <div style="font-size:9px;color:#6880A0;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Breakdown Fattori</div>
-      ${r.breakdown.map(b=>`
-        <div class="fbar-row"><div class="fbar-hdr"><span style="color:${b.c}">${b.i} ${b.l}</span><b style="color:${b.c}">${b.v>0?'+':''}${b.v}</b></div>
-        <div class="fbar-track"><div class="fbar-fill" style="width:${Math.abs(b.v)}%;background:${b.c}"></div></div></div>`).join('')}
-    </div>
-    ${r.analysis?`
-    <div style="padding:12px;background:#07090D;border-radius:5px;border:1px solid #192030">
-      <div style="font-size:9px;color:#C8A020;letter-spacing:.1em;margin-bottom:8px">◈ ANALISI CLAUDE AI</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <span class="badge ${r.analysis.bias==='bullish'?'b-bull':r.analysis.bias==='bearish'?'b-bear':'b-neut'}">${r.analysis.bias?.toUpperCase()}</span>
-        <span class="badge b-neut">CONF ${r.analysis.confidence}%</span>
-        <span class="badge b-neut">${(r.analysis.time_horizon||'').toUpperCase()}</span>
+      <div style="font-size:11px;color:#6880A0;display:flex;justify-content:space-between;gap:10px">
+        <span>Conf</span>
+        <span style="color:#C8A020;font-weight:900;font-family:monospace">${fmt(s.confidence)}%</span>
       </div>
-      <div style="font-size:11px;line-height:1.8;color:#D0DFF8;border-left:2px solid #C8A020;padding-left:10px;margin-bottom:10px">${r.analysis.summary||'—'}</div>
-      ${(r.analysis.drivers||[]).length?`<div style="font-size:9px;color:#18B85A;margin-bottom:4px;letter-spacing:.1em">DRIVERS</div>${r.analysis.drivers.map(d=>`<div style="font-size:10px;color:#7A90B0;margin-bottom:3px">+ ${d}</div>`).join('')}`:''}
-    </div>`:`<div style="color:#6880A044;font-size:11px;padding:10px">Nessuna analisi AI (score sotto soglia)</div>`}
+      <div style="margin-top:8px;font-size:11px;color:#6880A0;display:flex;justify-content:space-between;gap:10px">
+        <span>Price</span>
+        <span style="color:#D0DFF8;font-weight:900;font-family:monospace">${fmt(s.price)}</span>
+      </div>
+      ${s.ai_validation && s.ai_validation.summary ? `<div style="margin-top:10px;border-top:1px solid #19203022;padding-top:8px;font-size:10px;color:#7A90B0;line-height:1.5">${escapeHtml(s.ai_validation.summary).slice(0,100)}…</div>` : ''}
+    </div>
   `;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+function showDetail(symbol) {
+  const s = SIGNALS.find(x => x.symbol === symbol);
+  if (!s) return;
+  const b = actionBadge(s.action);
+  document.getElementById('detail-action-badge').className = 'badge ' + b.cls;
+  document.getElementById('detail-action-badge').textContent = b.txt;
+  document.getElementById('detail-title').textContent = `${s.symbol} — ${s.name || ''}`;
+  const ind = s.indicators || {};
+
+  const aiSummary = s.ai_validation && s.ai_validation.summary ? `<div style="margin-top:10px;padding:10px;background:#07090D;border:1px solid #192030;border-radius:6px">
+    <div style="font-size:10px;color:#C8A020;font-weight:900;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">AI Validation</div>
+    <div style="color:#D0DFF8;font-size:11px;line-height:1.6">${escapeHtml(s.ai_validation.summary)}</div>
+    <div style="margin-top:8px;color:#6880A0;font-size:11px;font-family:monospace">news_bias: ${escapeHtml(s.ai_validation.news_bias || 'neutral')} · Δconf: ${fmt(s.ai_validation.confidence_adjustment || 0)}</div>
+  </div>` : '';
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="split">
+      <div>
+        <div style="margin-bottom:12px">
+          <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Trade plan</div>
+          <div class="kv"><div class="k">Price</div><div class="v">${fmt(s.price)}</div></div>
+          <div class="kv"><div class="k">Entry</div><div class="v">${fmt(s.entry)}</div></div>
+          <div class="kv"><div class="k">Stop loss</div><div class="v">${fmt(s.stop_loss)}</div></div>
+          <div class="kv"><div class="k">Take profit</div><div class="v">${fmt(s.take_profit)}</div></div>
+          <div class="kv"><div class="k">Risk/Reward</div><div class="v">${s.risk_reward === null ? '—' : fmt(s.risk_reward)}</div></div>
+          <div class="kv"><div class="k">Real data</div><div class="v">${hasRealBadge(s.has_real_data)}</div></div>
+        </div>
+        <div style="margin-bottom:8px">
+          <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Reasons</div>
+          <div style="color:#D0DFF8;font-size:11px;line-height:1.7">
+            ${(s.reasons && s.reasons.length) ? s.reasons.map(r => `<div>• ${escapeHtml(r)}</div>`).join('') : '<div class="subtle">—</div>'}
+          </div>
+        </div>
+        ${aiSummary}
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-sm" onclick="runBacktest('${s.symbol}')">▶ Backtest questo simbolo</button>
+        </div>
+      </div>
+      <div>
+        <div class="subtle" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px">Indicator snapshot</div>
+        <div class="kv"><div class="k">RSI(14)</div><div class="v">${fmt(ind.rsi14)}</div></div>
+        <div class="kv"><div class="k">SMA20</div><div class="v">${fmt(ind.sma20)}</div></div>
+        <div class="kv"><div class="k">SMA50</div><div class="v">${fmt(ind.sma50)}</div></div>
+        <div class="kv"><div class="k">MACD hist</div><div class="v">${fmt(ind.macd_hist)}</div></div>
+        <div class="kv"><div class="k">ADX(14)</div><div class="v">${fmt(ind.adx14)}</div></div>
+        <div class="kv"><div class="k">+DI / -DI</div><div class="v">${fmt(ind.plus_di14)} / ${fmt(ind.minus_di14)}</div></div>
+        <div class="kv"><div class="k">ATR(14)</div><div class="v">${fmt(ind.atr14)}</div></div>
+        <div class="kv"><div class="k">BB bandwidth</div><div class="v">${fmt(ind.bb_bw_pct)}%</div></div>
+        <div class="kv"><div class="k">Support(20)</div><div class="v">${fmt(ind.support20)}</div></div>
+        <div class="kv"><div class="k">Resistance(20)</div><div class="v">${fmt(ind.resistance20)}</div></div>
+        <div class="kv"><div class="k">Dist to S / R</div><div class="v">${fmt(ind.dist_to_support_pct)}% / ${fmt(ind.dist_to_resistance_pct)}%</div></div>
+        <div class="kv"><div class="k">Breakout</div><div class="v">${ind.breakout_up ? 'UP' : (ind.breakout_down ? 'DOWN' : '—')}</div></div>
+        <div class="kv"><div class="k">Vol ratio</div><div class="v">${fmt(ind.vol_ratio_pct)}%</div></div>
+        <div class="kv"><div class="k">ROC(10)</div><div class="v">${fmt(ind.roc10)}%</div></div>
+        <div class="kv"><div class="k">ATR percentile</div><div class="v">${fmt(ind.atr_percentile252)}%</div></div>
+        <div class="kv"><div class="k">Update</div><div class="v">${escapeHtml(String(s.timestamp || '—'))}</div></div>
+      </div>
+    </div>
+  `;
+
   document.getElementById('detail-overlay').classList.add('open');
 }
 
 function closeDetail(e) {
-  if(!e||e.target===document.getElementById('detail-overlay')||e.target.tagName==='BUTTON')
+  if (!e || e.target === document.getElementById('detail-overlay') || e.target.tagName === 'BUTTON') {
     document.getElementById('detail-overlay').classList.remove('open');
+  }
 }
 
-// ─── SCHEDULER ────────────────────────────────────────────────────────────
+async function loadAssets() {
+  const res = await fetch(apiUrl('/api/assets'));
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  ASSETS = data.assets || [];
+}
+
+function fillBacktestSymbols() {
+  const sel = document.getElementById('bt-symbol');
+  sel.innerHTML = '';
+  ASSETS.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.symbol;
+    opt.textContent = `${a.symbol} (${a.asset_type})`;
+    sel.appendChild(opt);
+  });
+}
+
 async function loadScheduler() {
+  const top = document.getElementById('sch-top-list');
   try {
     const res = await fetch(apiUrl('/api/scheduled'));
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    document.getElementById('sch-status').textContent = data.running?'⟳ In esecuzione...':'✓ In attesa';
-    document.getElementById('sch-status').style.color = data.running?'#C8A020':'#18B85A';
-    document.getElementById('sch-last').textContent = data.last_run?new Date(data.last_run).toLocaleString('it'):'Mai';
-    document.getElementById('sch-next').textContent = data.next_run?new Date(data.next_run).toLocaleString('it'):'—';
-    document.getElementById('sch-count').textContent = data.count||0;
-    // Top 5
-    const top=(data.results||[]).slice(0,5);
-    document.getElementById('sch-top-list').innerHTML=top.length?top.map(r=>{
-      const col=r.score>30?'#18B85A':r.score<-30?'#E03838':'#C8A020';
-      return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid #19203022;font-size:11px">
-        <span style="font-weight:700;color:#D0DFF8;width:45px">${r.symbol}</span>
-        <span style="font-family:monospace;font-weight:700;color:${col};width:40px">${r.score>0?'+':''}${r.score}</span>
-        <div style="flex:1;height:3px;background:#192030;border-radius:2px"><div style="height:100%;width:${Math.abs(r.score)}%;background:${col};border-radius:2px"></div></div>
-        <span style="color:#6880A0;width:100px;text-align:right">${r.name.slice(0,14)}</span>
-        ${r.analysis?`<span class="badge ${r.analysis.bias==='bullish'?'b-bull':r.analysis.bias==='bearish'?'b-bear':'b-neut'}" style="font-size:9px">${r.analysis.bias?.toUpperCase()}</span>`:'<span style="color:#6880A044;font-size:9px">no AI</span>'}
-      </div>`;}).join(''):'<div style="color:#6880A044;font-size:11px;padding:8px 0">Nessun dato</div>';
-  } catch(e) {
-    document.getElementById('sch-status').textContent='Errore: '+e.message;
-    document.getElementById('sch-status').style.color='#E03838';
+    document.getElementById('sch-status').textContent = data.running ? '⟳ In esecuzione...' : '✓ In attesa';
+    document.getElementById('sch-last').textContent = data.last_run ? new Date(data.last_run).toLocaleString('it') : 'Mai';
+    document.getElementById('sch-next').textContent = data.next_run ? new Date(data.next_run).toLocaleString('it') : '—';
+    document.getElementById('sch-count').textContent = data.count || 0;
+    const results = data.results || [];
+    const active = results.filter(r => r.action === 'BUY' || r.action === 'SELL').slice(0, 5);
+    top.innerHTML = active.length ? active.map(r => `<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #19203022">
+      <span style="font-family:monospace;font-weight:900;width:70px;color:#D0DFF8">${r.symbol}</span>
+      <span class="badge ${r.action==='BUY'?'b-bull':'b-bear'}" style="font-size:9px">${r.action}</span>
+      <span style="font-family:monospace;color:#C8A020;font-weight:900">${fmt(r.confidence)}%</span>
+      <span style="color:#6880A0;font-size:11px;flex:1">${escapeHtml(r.name||'')}</span>
+    </div>`).join('') : '<div class="subtle" style="padding:8px 0">Nessun segnale BUY/SELL.</div>';
+  } catch (e) {
+    top.innerHTML = '<div class="subtle" style="padding:8px 0">⚠ ' + escapeHtml(e.message) + '</div>';
   }
 }
 
 async function forceRefresh() {
+  const el = document.getElementById('sch-status');
+  el.textContent = '⟳ Avvio...';
   try {
-    await fetch(apiUrl('/api/scheduled/refresh'), {method:'POST'});
-    document.getElementById('sch-status').textContent='⟳ Avviato...';
-    document.getElementById('sch-status').style.color='#C8A020';
-    setTimeout(()=>{loadScheduler();loadScanner();},3000);
-  } catch(e) {alert('Errore: '+e.message);}
+    const res = await fetch(apiUrl('/api/scheduled/refresh'), {method:'POST'});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    setTimeout(() => { loadScheduler(); loadSignals(); }, 2500);
+  } catch (e) {
+    alert('Errore: ' + e.message);
+  }
 }
 
-// ─── TABS ─────────────────────────────────────────────────────────────────
-function showTab(id) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
-  const tabs = ['gold','scanner','scheduler','settings'];
-  const idx = tabs.indexOf(id);
-  document.querySelectorAll('.tab')[idx].classList.add('active');
-  document.getElementById('tab-'+id).classList.add('active');
-  if(id==='scanner'){loadScannerData().then(()=>loadScanner());}
-  if(id==='scheduler')loadScheduler();
-  if(id==='settings')loadSettings();
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────
-const sl = ms=>new Promise(r=>setTimeout(r,ms));
-
-async function init() {
-  // Attacca eventi slider
-  ['r-etf','r-cot','r-ry'].forEach(id=>document.getElementById(id).addEventListener('input',onUpdate));
-  ['s-usd','s-gt','s-macro'].forEach(id=>document.getElementById(id).addEventListener('change',onUpdate));
-
-  // Carica config
-  try {
-    const res = await fetch(apiUrl('/api/config'));
-    if(res.ok) {
-      CFG = await res.json();
-      const kb=document.getElementById('hdr-key-badge');
-      if(CFG.has_anthropic){kb.textContent='● Claude OK';kb.className='badge b-ok';}
-      else{kb.textContent='● No API Key';document.getElementById('key-warn').style.display='block';document.getElementById('run-btn').disabled=true;}
-      document.getElementById('hdr-engine').textContent=`engine: ${CFG.has_perplexity?'dual':'claude'} · soglia ±${CFG.score_threshold}`;
-      document.getElementById('info-threshold').textContent=`soglia: ±${CFG.score_threshold}`;
-    }
-  } catch(e) { console.warn('Config API non disponibile:', e); }
-
-  // Init UI
-  setPipe(-1);
-  onUpdate();  // Prima chiamata con valori default
-
-  // Aspetta che il DOM abbia dimensioni reali, poi disegna i canvas
-  const waitAndDraw = () => {
-    const w = document.getElementById('price-chart')?.parentElement?.clientWidth;
-    if(w && w>50) {
-      chartsReady = true;
-      onUpdate();
-    } else {
-      setTimeout(waitAndDraw, 100);
-    }
-  };
-  setTimeout(waitAndDraw, 200);
-
-  // Aggiorna grafici al resize
-  window.addEventListener('resize', () => { if(chartsReady) onUpdate(); });
-}
-
-
-// ─── SETTINGS TAB ─────────────────────────────────────────────────────────
 async function loadSettings() {
   try {
     const res = await fetch(apiUrl('/api/config'));
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const cfg = await res.json();
-
-    // Email status
-    const esb = document.getElementById('email-status-box');
-    if(cfg.email_enabled) {
-      esb.innerHTML = `<span style="color:#18B85A">● Email abilitata</span><br>
-        Destinatario: <b style="color:#D0DFF8">${cfg.email_to||'—'}</b><br>
-        Score minimo: <b style="color:#C8A020">±${cfg.email_min_score}</b>`;
+    CFG = cfg;
+    document.getElementById('set-version').textContent = cfg.version || '—';
+    document.getElementById('set-threshold').textContent = (cfg.score_threshold ?? '—');
+    document.getElementById('set-scheduler').textContent = `${cfg.scheduler_minutes} min (${cfg.scheduler_enabled ? 'on' : 'off'})`;
+    document.getElementById('set-email').textContent = cfg.email_enabled ? 'enabled' : 'disabled';
+    document.getElementById('set-anthropic').textContent = cfg.has_anthropic ? 'Anthropic OK' : 'no key';
+    const kb = document.getElementById('hdr-key-badge');
+    if (cfg.has_anthropic) {
+      kb.textContent = '● Claude OK';
+      kb.className = 'badge b-ok';
+      document.getElementById('hdr-status').textContent = 'LLM: attivo (solo top segnali)';
     } else {
-      esb.innerHTML = '<span style="color:#E03838">● Email disabilitata</span><br>Abilita <b style="color:#D0DFF8">email_enabled: true</b> nelle impostazioni addon';
+      kb.textContent = '● No API Key';
+      kb.className = 'badge b-no';
+      document.getElementById('hdr-status').textContent = 'LLM: disattivo';
     }
-
-    // Email config
-    const ecb = document.getElementById('email-config-box');
-    ecb.innerHTML = `
-      SMTP host: <b style="color:#D0DFF8">${cfg.smtp_host||'—'}</b><br>
-      Porta: <b style="color:#D0DFF8">${cfg.smtp_port||587}</b><br>
-      Engine: <b style="color:#C8A020">${cfg.engine_mode}</b><br>
-      Soglia: <b style="color:#C8A020">±${cfg.score_threshold}</b>`;
-
-    // Scheduler
-    const scb = document.getElementById('sched-config-box');
-    scb.innerHTML = `
-      Intervallo: <b style="color:#C8A020">${cfg.scheduler_minutes} minuti</b><br>
-      Stato: <b style="color:${cfg.scheduler_enabled?'#18B85A':'#E03838'}">${cfg.scheduler_enabled?'✓ Attivo':'✗ Disabilitato'}</b><br>
-      Asset monitorati: <b style="color:#D0DFF8">GLD · IAU · SPY · QQQ · XLE · TLT · AAPL · NVDA · MSFT · XOM</b>`;
-
-    // Abilita/disabilita bottone test
-    document.getElementById('test-email-btn').disabled = !cfg.email_enabled;
-
-  } catch(e) {
-    document.getElementById('email-status-box').innerHTML = '<span style="color:#E03838">✗ Errore: '+e.message+'</span>';
+  } catch (e) {
+    document.getElementById('hdr-status').textContent = 'Config non disponibile';
   }
 }
 
-async function sendTestEmail() {
-  const btn = document.getElementById('test-email-btn');
-  const res_el = document.getElementById('test-email-result');
-  btn.disabled = true;
-  btn.textContent = '⟳ Invio in corso...';
-  res_el.style.display = 'none';
+async function runBacktest(symbol) {
+  const btErr = document.getElementById('bt-err');
+  btErr.style.display = 'none';
+  btErr.textContent = '';
+  const sym = symbol || document.getElementById('bt-symbol').value;
+  const payload = {
+    symbol: sym,
+    period: document.getElementById('bt-period').value,
+    max_holding_days: parseInt(document.getElementById('bt-hold').value),
+    allow_short: document.getElementById('bt-short').value === 'true'
+  };
+  document.getElementById('bt-trades-note').textContent = 'Esecuzione…';
   try {
-    const res = await fetch(apiUrl('/api/email/test'), {method:'POST'});
+    showTab('backtest');
+    const res = await fetch(apiUrl('/api/backtest'), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
     const data = await res.json();
-    if(res.ok && data.status==='sent') {
-      res_el.style.display = 'inline';
-      res_el.style.color = '#18B85A';
-      res_el.textContent = '✓ Email inviata con successo!';
-    } else {
-      throw new Error(data.detail || data.status || 'Errore sconosciuto');
-    }
-  } catch(e) {
-    res_el.style.display = 'inline';
-    res_el.style.color = '#E03838';
-    res_el.textContent = '✗ '+e.message;
+    if (!res.ok) throw new Error(data.detail || res.status);
+
+    // Extract for the single symbol requested.
+    const out = (data.per_symbol && data.per_symbol[sym]) ? data.per_symbol[sym] : null;
+    if (!out) throw new Error('Backtest risultato mancante');
+
+    const m = out.metrics || {};
+    document.getElementById('bt-total-trades').textContent = m.total_trades ?? '—';
+    document.getElementById('bt-win-rate').textContent = (m.win_rate !== undefined && m.win_rate !== null) ? (m.win_rate*100).toFixed(1)+'%' : '—';
+    document.getElementById('bt-expectancy').textContent = m.expectancy !== undefined && m.expectancy !== null ? (m.expectancy*100).toFixed(2)+'%' : '—';
+    document.getElementById('bt-profit-factor').textContent = (m.profit_factor===null || m.profit_factor===undefined) ? '—' : m.profit_factor.toFixed(3);
+    document.getElementById('bt-max-dd').textContent = m.max_drawdown !== undefined && m.max_drawdown !== null ? (m.max_drawdown*100).toFixed(2)+'%' : '—';
+    document.getElementById('bt-total-return').textContent = m.total_return !== undefined && m.total_return !== null ? (m.total_return*100).toFixed(2)+'%' : '—';
+    document.getElementById('bt-cagr').textContent = m.CAGR !== undefined && m.CAGR !== null ? (m.CAGR*100).toFixed(2)+'%' : '—';
+    document.getElementById('bt-sharpe').textContent = (m.Sharpe===null || m.Sharpe===undefined) ? '—' : m.Sharpe.toFixed(3);
+    document.getElementById('bt-benchmark').textContent = m.benchmark_buy_and_hold !== undefined && m.benchmark_buy_and_hold !== null ? (m.benchmark_buy_and_hold*100).toFixed(2)+'%' : '—';
+
+    const logRows = out.trade_log || [];
+    const tbody = document.getElementById('bt-trades-body');
+    tbody.innerHTML = '';
+    const limit = 50;
+    const shown = logRows.slice(0, limit);
+    shown.forEach(t => {
+      const ret = (t.return_pct !== null && t.return_pct !== undefined) ? (t.return_pct*100).toFixed(2)+'%' : '—';
+      const entry = t.entry_time ? new Date(t.entry_time).toLocaleDateString('it') : '';
+      const exit = t.exit_time ? new Date(t.exit_time).toLocaleDateString('it') : '';
+      tbody.innerHTML += `
+        <tr>
+          <td>${escapeHtml(t.side || '')}</td>
+          <td class="mono">${escapeHtml(entry)}<br/><span class="subtle">${fmt(t.entry_price)}</span></td>
+          <td class="mono">${escapeHtml(exit)}<br/><span class="subtle">${fmt(t.exit_price)}</span></td>
+          <td>${escapeHtml(t.exit_reason || '')}</td>
+          <td class="mono" style="color:${(t.return_pct||0)>0 ? '#18B85A' : '#E03838'}">${ret}</td>
+        </tr>`;
+    });
+
+    document.getElementById('bt-trades-note').textContent = logRows.length > limit ? `Mostrati ${limit}/${logRows.length} trade.` : `Trade: ${logRows.length}`;
+  } catch (e) {
+    btErr.style.display = 'block';
+    btErr.textContent = '⚠ ' + e.message;
   }
-  btn.disabled = false;
-  btn.textContent = '✉ Invia Email di Test';
 }
 
+function init() {
+  // Filters
+  ['filter-market','filter-type','filter-symbol'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('change', () => loadSignals());
+    el.addEventListener('input', () => loadSignals());
+  });
+  // Boot
+  (async () => {
+    await loadAssets();
+    fillBacktestSymbols();
+    await loadSettings();
+    await loadSignals();
+    loadScheduler();
+  })();
+}
+
+function fmtStr(x){return (x===null||x===undefined)?'—':String(x)}
+
+// Fix missing symbols in escape in table creation
 window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
+
