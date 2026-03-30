@@ -1,6 +1,7 @@
 #!/bin/sh
-# run.sh — Gold Intelligence v1.2.0
-# FIX: uvicorn bind su 127.0.0.1 (solo ingress HA, non esposto su LAN)
+# run.sh - Gold Intelligence v1.5.0
+# Bind 127.0.0.1: porta accessibile SOLO da HA Ingress, non dalla LAN
+# Questo elimina l'errore "invalid authentication" nel log HA
 
 OPTIONS=/data/options.json
 
@@ -21,21 +22,11 @@ export PERPLEXITY_API_KEY=$(get_opt "perplexity_api_key" "")
 export SCORE_THRESHOLD=$(get_opt "score_threshold" "30")
 export ENGINE_MODE=$(get_opt "engine_mode" "auto")
 export SCHEDULER_MINUTES=$(get_opt "scheduler_interval_minutes" "60")
-
-# CRITICO: bind su 127.0.0.1 NON 0.0.0.0
-# HA Ingress fa da proxy — la porta non deve essere raggiungibile
-# direttamente dalla LAN (altrimenti HA logga "invalid authentication")
 export BIND_HOST="127.0.0.1"
 export INGRESS_PORT=$(get_opt "ingress_port" "8099")
 
-echo "[Gold Intelligence v1.2.0] Avvio..."
-echo "[Gold Intelligence] Bind: ${BIND_HOST}:${INGRESS_PORT} (solo ingress HA)"
-echo "[Gold Intelligence] Engine: ${ENGINE_MODE} | Soglia: ±${SCORE_THRESHOLD}"
-
-if [ -n "${PERPLEXITY_API_KEY}" ]; then
-    echo "[Gold Intelligence] Dual engine (Perplexity + Claude)"
-else
-    echo "[Gold Intelligence] Claude + web search"
-fi
+echo "[Gold Intelligence v1.5.0] Avvio..."
+echo "[Config] Engine=${ENGINE_MODE} | Soglia=+-${SCORE_THRESHOLD} | Scheduler=${SCHEDULER_MINUTES}min"
+echo "[Config] Bind=${BIND_HOST}:${INGRESS_PORT} | Perplexity=$([ -n "${PERPLEXITY_API_KEY}" ] && echo ON || echo OFF)"
 
 exec python3 /app/main.py

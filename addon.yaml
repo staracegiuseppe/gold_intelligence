@@ -1,7 +1,7 @@
 name: Gold Intelligence
-version: "1.2.1"
+version: "1.5.0"
 slug: gold_intelligence
-description: Analisi mercato oro XAU/USD - Smart Money Score + Claude AI + Report Email.
+description: Analisi mercato oro XAU/USD - Smart Money Score + Claude AI + Perplexity + Segnali Trading + Report Email.
 url: https://github.com/staracegiuseppe/gold_intelligence
 
 arch:
