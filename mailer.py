@@ -1,173 +1,582 @@
-"""
-mailer.py
-Email reporter for multi-market quant signals.
+# mailer.py v5.0 - Email report completo in italiano
+# Include: segnali tecnici + Smart Money + scoperte fuori watchlist
+# OAuth2 (primario) + App Password (fallback)
 
-No AI required; if `ai_validation` is present, include a short summary.
-"""
-
-from __future__ import annotations
-
-import logging
-import smtplib
+import smtplib, base64, logging, time, json
 from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from typing import Any, Dict, List
-from datetime import datetime
+from email.mime.text      import MIMEText
+from datetime             import datetime
+from typing               import List, Dict, Optional
+import requests as _req
 
 log = logging.getLogger("mailer")
 
+try:
+    from smart_money import build_email_section as _sm_section
+    _HAS_SM = True
+except ImportError:
+    _HAS_SM = False
 
-def _col_for_action(action: str) -> str:
-    if action == "BUY":
-        return "#18B85A"
-    if action == "SELL":
-        return "#E03838"
-    if action == "WATCHLIST":
-        return "#C8A020"
-    if action == "NO_DATA":
-        return "#6880A0"
-    return "#6880A0"
+# ── OAuth2 ────────────────────────────────────────────────────────────────────
+_tok: Dict = {"access_token": None, "expires_at": 0}
 
-
-def _badge_for_action(action: str) -> str:
-    if action == "BUY":
-        return "BUY"
-    if action == "SELL":
-        return "SELL"
-    if action == "WATCHLIST":
-        return "WATCHLIST"
-    if action == "NO_DATA":
-        return "NO_DATA"
-    return "HOLD"
-
-
-def _fmt_num(x: Any) -> str:
-    if x is None:
-        return "—"
+def _access_token(cid, csecret, rtoken):
+    if _tok["access_token"] and _tok["expires_at"] > time.time() + 60:
+        return _tok["access_token"]
     try:
-        if isinstance(x, str):
-            return x
-        return f"{float(x):.4f}".rstrip("0").rstrip(".")
-    except Exception:
-        return str(x)
+        r = _req.post("https://oauth2.googleapis.com/token", data={
+            "client_id": cid, "client_secret": csecret,
+            "refresh_token": rtoken, "grant_type": "refresh_token",
+        }, timeout=10)
+        if r.status_code == 200:
+            d = r.json()
+            _tok["access_token"] = d["access_token"]
+            _tok["expires_at"]   = time.time() + int(d.get("expires_in", 3600))
+            log.info("[OAUTH2] access_token OK")
+            return _tok["access_token"]
+        log.error(f"[OAUTH2] {r.status_code}: {r.text[:150]}")
+    except Exception as e:
+        log.error(f"[OAUTH2] {e}")
+    return None
+
+def _send_oauth2(msg, sender, recipient, cid, csecret, rtoken):
+    token = _access_token(cid, csecret, rtoken)
+    if not token: return False
+    auth = base64.b64encode(f"user={sender}\x01auth=Bearer {token}\x01\x01".encode()).decode()
+    try:
+        s = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+        s.ehlo(); s.starttls(); s.ehlo()
+        code, _ = s.docmd("AUTH", "XOAUTH2 " + auth)
+        if code == 334: s.docmd("")
+        s.sendmail(sender, recipient, msg.as_string()); s.quit()
+        log.info("[OAUTH2] ✓"); return True
+    except Exception as e:
+        log.error(f"[OAUTH2] {e}"); return False
+
+def _send_apppassword(msg, sender, recipient, host, port, user, pw, tls):
+    try:
+        s = smtplib.SMTP(host, port, timeout=15) if tls else smtplib.SMTP_SSL(host, port, timeout=15)
+        if tls: s.ehlo(); s.starttls()
+        s.login(user, pw)
+        s.sendmail(sender, recipient, msg.as_string()); s.quit()
+        log.info("[SMTP] ✓"); return True
+    except smtplib.SMTPAuthenticationError:
+        log.error("[SMTP] Auth fallita"); return False
+    except Exception as e:
+        log.error(f"[SMTP] {e}"); return False
 
 
-def build_html(results: List[Dict[str, Any]], run_ts: str, next_ts: str, min_score: int) -> str:
-    strong = [r for r in results if abs(float(r.get("score", 0))) >= float(min_score) and r.get("action") in ("BUY", "SELL")]
-    n = len(results)
-    run_dt = (run_ts[:19].replace("T", " ")) if run_ts else "---"
-    next_dt = (next_ts[:19].replace("T", " ")) if next_ts else "---"
+# ── Traduzione motivazioni ────────────────────────────────────────────────────
+_TR = {
+    "price>MA20>MA50":        "Prezzo sopra media 20 e 50 giorni → trend rialzista",
+    "price<MA20<MA50":        "Prezzo sotto media 20 e 50 giorni → trend ribassista",
+    "golden_cross":           "Golden Cross: media 20 ha superato media 50 → segnale rialzista forte",
+    "death_cross":            "Death Cross: media 20 ha incrociato al ribasso media 50 → segnale ribassista",
+    "above MA200":            "Prezzo sopra media 200 giorni → trend di lungo periodo positivo",
+    "below MA200":            "Prezzo sotto media 200 giorni → trend di lungo periodo negativo",
+    "MACD hist>0":            "MACD positivo → momentum in crescita",
+    "MACD hist<0":            "MACD negativo → momentum in calo",
+    "MACD bullish crossover": "Incrocio MACD rialzista → cambio direzione verso l'alto",
+    "MACD bearish crossover": "Incrocio MACD ribassista → cambio direzione verso il basso",
+    "RSI constructive":       "RSI in zona costruttiva (40–65) → forza senza eccessi",
+    "RSI recovering":         "RSI in recupero → uscita dalla zona di debolezza",
+    "RSI overbought":         "RSI in ipercomprato (>70) → attenzione a possibile correzione",
+    "RSI oversold":           "RSI in ipervenduto (<30) → possibile rimbalzo tecnico",
+    "RSI weak":               "RSI debole (<35) → pressione ribassista persistente",
+    "ADX":                    "ADX elevato → trend forte e direzionale",
+    "OBV bullish":            "Volume in accumulo (OBV crescente) → acquisti istituzionali in corso",
+    "OBV bearish":            "Volume in distribuzione (OBV calante) → vendite istituzionali in corso",
+    "BB oversold zone":       "Prezzo nella banda bassa di Bollinger → zona di supporto tecnico",
+    "BB overbought":          "Prezzo nella banda alta di Bollinger → zona di resistenza tecnica",
+    "high volume confirms":   "Volume elevato confirma la direzione del movimento",
+    "ROC10":                  "Momentum positivo a 10 giorni",
+}
 
-    card_rows = []
-    for r in strong[:30]:
-        action = r.get("action", "HOLD")
-        col = _col_for_action(action)
-        conf = r.get("confidence", 0)
-        sym = r.get("symbol", "")
-        name = r.get("name", "")
-        entry = _fmt_num(r.get("entry"))
-        sl = _fmt_num(r.get("stop_loss"))
-        tp = _fmt_num(r.get("take_profit"))
-        rr = _fmt_num(r.get("risk_reward"))
-        ai = r.get("ai_validation") or {}
-        ai_summary = ai.get("summary") or ""
-        headlines = r.get("news_headlines") or []
-        headlines_txt = ""
-        if ai_summary and headlines:
-            hs = headlines[:3]
-            headlines_txt = "<div style='margin-top:8px;color:#7A90B0;font-size:12px;line-height:1.5'>"
-            for h in hs:
-                headlines_txt += f"<div>• {h.get('date','')} {h.get('source','')}: {h.get('title','')[:90]}</div>"
-            headlines_txt += "</div>"
+def _tr(reason: str) -> str:
+    import re
+    for key, trad in _TR.items():
+        if key in reason:
+            nums = re.findall(r'[-+]?\d+\.?\d*', reason)
+            return trad + (f" ({nums[0]})" if nums else "")
+    return reason
 
-        card_html = (
-            "<div style='background:#07090D;border:1px solid #1E2D45;border-radius:8px;padding:14px;margin-bottom:12px'>"
-            + f"<div style='display:flex;justify-content:space-between;gap:12px;align-items:flex-start'>"
-            + f"<div><div style='font-size:16px;font-weight:900;color:#D0DFF8'>{sym}</div>"
-            + f"<div style='font-size:12px;color:#6880A0;margin-top:2px'>{name}</div>"
-            + f"<div style='margin-top:8px'><span style='padding:3px 10px;border-radius:4px;border:1px solid {col}55;background:{col}18;color:{col};font-size:11px;font-weight:900'>{_badge_for_action(action)}</span></div>"
-            + "</div>"
-            + f"<div style='text-align:right'><div style='font-size:26px;font-weight:900;color:{col};font-family:monospace'>{'+' if r.get('score',0)>0 else ''}{_fmt_num(r.get('score'))}</div>"
-            + f"<div style='font-size:11px;color:#6880A0'>/100 · conf {conf}%</div></div>"
-            + "</div>"
-            + "<div style='margin-top:10px;font-size:12px;color:#D0DFF8;line-height:1.7'>"
-            + f"<div>Entry: <span style='font-family:monospace'>{entry}</span> · SL: <span style='font-family:monospace'>{sl}</span> · TP: <span style='font-family:monospace'>{tp}</span></div>"
-            + f"<div>Risk/Reward: <span style='font-family:monospace'>{rr}</span></div>"
-            + "</div>"
-            + (f"<div style='margin-top:10px;color:#B0C4DE;font-size:12px;line-height:1.6;border-left:3px solid {col};padding-left:10px'>{ai_summary}</div>" if ai_summary else "")
-            + headlines_txt
-            + "</div>"
+
+# ── Score breakdown in italiano ───────────────────────────────────────────────
+_BD_NOMI = {
+    "ma_align":  "Allineamento medie mobili",
+    "ma_cross":  "Incrocio medie mobili",
+    "vs_ma200":  "Posizione vs MA200 (lungo periodo)",
+    "macd":      "MACD",
+    "macd_cross":"Incrocio MACD",
+    "rsi":       "RSI",
+    "adx":       "ADX — Forza del trend",
+    "obv":       "OBV — Volume istituzionale",
+    "volume":    "Conferma del volume",
+    "bb":        "Bande di Bollinger",
+    "roc":       "Momentum ROC 10 giorni",
+}
+
+def _score_breakdown_html(bd: dict) -> str:
+    if not bd: return ""
+    rows = ""
+    for k, v in bd.items():
+        if v == 0: continue
+        col = "#16A34A" if v > 0 else "#DC2626"
+        w   = min(100, abs(v) * 5)
+        s   = ("+" if v > 0 else "") + str(v)
+        nm  = _BD_NOMI.get(k, k)
+        rows += (
+            f'<tr><td style="padding:3px 8px;color:#9CA3AF;font-size:11px;white-space:nowrap">{nm}</td>'
+            f'<td style="padding:3px 8px;width:100px">'
+            f'<div style="height:5px;background:#1F2937;border-radius:3px">'
+            f'<div style="height:5px;width:{w}%;background:{col};border-radius:3px"></div>'
+            f'</div></td>'
+            f'<td style="padding:3px 8px;color:{col};font-family:monospace;font-size:11px;text-align:right">{s}</td>'
+            f'</tr>'
         )
-        card_rows.append(card_html)
+    return (
+        '<div style="margin-top:12px">'
+        '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">CONTRIBUTO INDICATORI AL PUNTEGGIO</div>'
+        f'<table style="width:100%;border-collapse:collapse">{rows}</table>'
+        '</div>'
+    ) if rows else ""
 
-    if not card_rows:
-        card_rows.append(
-            "<div style='padding:14px;color:#6880A0;font-size:13px'>Nessun BUY/SELL sopra soglia (|score| >= %d).</div>" % min_score
+
+# ── Indicatori tecnici ────────────────────────────────────────────────────────
+def _ind_section(ind: dict) -> str:
+    if not ind: return ""
+    defs = [
+        ("rsi",        "RSI (14)",             lambda v: f"{v}",    lambda v: "Ipercomprato ⚠" if v>70 else "Ipervenduto ⚠" if v<30 else "Zona neutrale"),
+        ("adx",        "ADX — Forza trend",    lambda v: f"{v}",    lambda v: "Trend forte ✓" if v>25 else "Trend debole"),
+        ("macd_hist",  "MACD Istogramma",       lambda v: f"{v:+.4f}", lambda v: "Momentum positivo" if v>0 else "Momentum negativo"),
+        ("obv_trend",  "OBV Trend",            lambda v: "Rialzista" if v=="bullish" else "Ribassista", lambda v: "Accumulo istituzionale" if v=="bullish" else "Distribuzione"),
+        ("bb_pos",     "Posizione Bollinger",   lambda v: f"{v:.0f}%", lambda v: "Zona alta (resistenza)" if v>70 else "Zona bassa (supporto)" if v<30 else "Zona centrale"),
+        ("stoch_k",    "Stocastico K",          lambda v: f"{v}",    lambda v: "Ipercomprato" if v>80 else "Ipervenduto" if v<20 else "Neutrale"),
+        ("vol_signal", "Volume",                lambda v: {"HIGH":"Alto","LOW":"Basso","NORMAL":"Normale"}.get(v,v), lambda v: ""),
+        ("roc10",      "ROC 10 giorni",         lambda v: f"{v:+.1f}%", lambda v: "Momentum positivo" if v>0 else "Momentum negativo"),
+        ("atr_regime", "Volatilità",            lambda v: {"HIGH_VOL":"Alta","LOW_VOL":"Bassa","NORMAL_VOL":"Normale"}.get(v,v), lambda v: ""),
+        ("ma_cross",   "Incrocio medie",        lambda v: {"golden_cross":"Golden Cross ↑","death_cross":"Death Cross ↓","ma20_above_ma50":"MA20 > MA50","ma20_below_ma50":"MA20 < MA50"}.get(v,v), lambda v: ""),
+        ("support",    "Supporto",              lambda v: f"{v}",    lambda v: "Livello di acquisto atteso"),
+        ("resistance", "Resistenza",            lambda v: f"{v}",    lambda v: "Livello di vendita atteso"),
+        ("ma20",       "Media mobile 20gg",     lambda v: f"{v}",    lambda v: ""),
+        ("ma50",       "Media mobile 50gg",     lambda v: f"{v}",    lambda v: ""),
+        ("ma200",      "Media mobile 200gg",    lambda v: f"{v}",    lambda v: ""),
+    ]
+    rows = ""
+    for key, label, fmt, comment in defs:
+        v = ind.get(key)
+        if v is None: continue
+        try:
+            vstr = fmt(v)
+            cstr = comment(v)
+        except Exception:
+            vstr, cstr = str(v), ""
+        rows += (
+            f'<tr style="border-bottom:1px solid #1F293718">'
+            f'<td style="padding:4px 8px;color:#9CA3AF;font-size:11px">{label}</td>'
+            f'<td style="padding:4px 8px;color:#F9FAFB;font-size:11px;font-family:monospace">{vstr}</td>'
+            f'<td style="padding:4px 8px;color:#6B7280;font-size:10px">{cstr}</td>'
+            f'</tr>'
+        )
+    return (
+        '<div style="margin-top:14px">'
+        '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">INDICATORI TECNICI COMPLETI</div>'
+        f'<table style="width:100%;border-collapse:collapse;background:#0A0F1A;border-radius:6px">{rows}</table>'
+        '</div>'
+    ) if rows else ""
+
+
+# ── Performance table (grafico alternativo per email) ────────────────────────
+def _perf_section(ind: dict, curr: str) -> str:
+    """Tabella performance e minigrafico a barre ASCII per email."""
+    perf = ind.get("performance", {})
+    if not perf: return ""
+
+    bars = {"1d": "█", "5d": "████", "20d": "████████", "60d": "████████████"}
+    rows = ""
+    for period, label, days_label in [
+        ("1d",  "1 giorno",   "1g"),
+        ("5d",  "1 settimana","1s"),
+        ("20d", "1 mese",     "1m"),
+        ("60d", "3 mesi",     "3m"),
+    ]:
+        v = perf.get(period)
+        if v is None: continue
+        col   = "#16A34A" if v >= 0 else "#DC2626"
+        sign  = "+" if v >= 0 else ""
+        bar_w = min(80, max(3, int(abs(v) * 4)))
+        rows += (
+            f'<tr style="border-bottom:1px solid #1F293718">'
+            f'<td style="padding:4px 8px;color:#9CA3AF;font-size:11px;width:80px">{label}</td>'
+            f'<td style="padding:4px 8px">'
+            f'<div style="height:8px;background:#1F2937;border-radius:2px;position:relative">'
+            f'<div style="height:8px;width:{bar_w}%;max-width:100%;background:{col};border-radius:2px"></div>'
+            f'</div></td>'
+            f'<td style="padding:4px 8px;color:{col};font-size:12px;font-weight:700;font-family:monospace;text-align:right;white-space:nowrap">{sign}{v}%</td>'
+            f'</tr>'
+        )
+    return (
+        '<div style="margin-top:14px">'
+        '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">PERFORMANCE STORICA</div>'
+        f'<table style="width:100%;border-collapse:collapse">{rows}</table>'
+        '</div>'
+    ) if rows else ""
+
+
+# ── Card segnale completa ─────────────────────────────────────────────────────
+def _card(r: dict) -> str:
+    action    = r.get("action", "HOLD")
+    col       = {"BUY":"#16A34A","SELL":"#DC2626","WATCHLIST":"#2563EB"}.get(action,"#6B7280")
+    etiq      = {"BUY":"🟢 ACQUISTO","SELL":"🔴 VENDITA","WATCHLIST":"🔵 DA OSSERVARE","HOLD":"⚪ NEUTRO"}.get(action, action)
+    sym       = r.get("symbol","?")
+    full_name = r.get("full_name") or r.get("name", sym)
+    isin      = r.get("isin","")
+    exchange  = r.get("exchange","")
+    market    = r.get("market","?")
+    mkt_label = {"IT":"Italia 🇮🇹","EU":"Europa 🇪🇺","US":"USA 🇺🇸"}.get(market, market)
+    atype     = {"stock":"Azione","etf":"ETF","index":"Indice"}.get(r.get("asset_type",""),"?")
+    curr      = r.get("currency","")
+    price     = r.get("price")
+    conf      = r.get("confidence",0)
+    score     = r.get("score",0)
+    entry     = r.get("entry"); sl = r.get("stop_loss"); tp = r.get("take_profit"); rr = r.get("risk_reward")
+    reasons   = r.get("reasons",[])
+    ind       = r.get("indicators",{})
+    bd        = r.get("score_breakdown",{})
+    ai_sum    = r.get("ai_summary","")
+    news      = r.get("news",[])
+    fv        = r.get("fair_value") or {}
+    hs        = r.get("health_score") or {}
+    sub_s     = r.get("sub_scores") or {}
+
+    conf_col  = "#16A34A" if conf>=70 else "#F59E0B" if conf>=50 else "#DC2626"
+    conf_lbl  = "Alta" if conf>=70 else "Media" if conf>=50 else "Bassa"
+    sc_str    = ("+" if score>=0 else "")+str(score)
+    isin_str  = " · ISIN: "+isin if isin else ""
+    exch_str  = " · "+exchange if exchange else ""
+
+    # Livelli operativi
+    livelli = ""
+    if entry and sl and tp:
+        rischio  = abs(entry - sl)
+        guadagno = abs(tp - entry)
+        livelli = (
+            '<table style="width:100%;border-collapse:collapse;background:#0A0F1A;border-radius:6px;margin-top:12px">'
+            '<tr>'
+            '<td style="padding:10px 12px;text-align:center;border-right:1px solid #1F2937">'
+            '<div style="font-size:9px;color:#9CA3AF;letter-spacing:.1em;margin-bottom:3px">PREZZO ENTRATA</div>'
+            '<div style="font-size:16px;font-weight:700;color:#F9FAFB;font-family:monospace">'+curr+" "+str(entry)+'</div>'
+            '</td>'
+            '<td style="padding:10px 12px;text-align:center;border-right:1px solid #1F2937">'
+            '<div style="font-size:9px;color:#9CA3AF;letter-spacing:.1em;margin-bottom:3px">STOP LOSS</div>'
+            '<div style="font-size:16px;font-weight:700;color:#DC2626;font-family:monospace">'+curr+" "+str(sl)+'</div>'
+            '<div style="font-size:10px;color:#6B7280;margin-top:2px">Rischio: '+f"{rischio:.2f}"+'</div>'
+            '</td>'
+            '<td style="padding:10px 12px;text-align:center;border-right:1px solid #1F2937">'
+            '<div style="font-size:9px;color:#9CA3AF;letter-spacing:.1em;margin-bottom:3px">OBIETTIVO</div>'
+            '<div style="font-size:16px;font-weight:700;color:#16A34A;font-family:monospace">'+curr+" "+str(tp)+'</div>'
+            '<div style="font-size:10px;color:#6B7280;margin-top:2px">Guadagno: '+f"{guadagno:.2f}"+'</div>'
+            '</td>'
+            '<td style="padding:10px 12px;text-align:center">'
+            '<div style="font-size:9px;color:#9CA3AF;letter-spacing:.1em;margin-bottom:3px">RISCHIO/RENDIMENTO</div>'
+            '<div style="font-size:16px;font-weight:700;color:#F59E0B;font-family:monospace">1 : '+str(rr)+'</div>'
+            '</td>'
+            '</tr></table>'
         )
 
-    subject_style = (
-        "<div style='max-width:820px;margin:0 auto;padding:18px'>"
-        "<div style='background:linear-gradient(135deg,#0B0E16,#111827);border:1px solid #1E2D45;border-radius:10px;padding:18px;margin-bottom:16px'>"
-        "<div style='font-size:24px;font-weight:900;color:#C8A020'>Multi-Market Intelligence</div>"
-        "<div style='font-size:12px;color:#6880A0;margin-top:6px'>Quant signal email · Quantitative levels only</div>"
-        f"<div style='margin-top:10px;font-size:12px;color:#6880A0'>Generato: <b style='color:#D0DFF8'>{run_dt}</b> &nbsp; Prossimo: <b style='color:#D0DFF8'>{next_dt}</b> &nbsp; Asset totali: <b style='color:#C8A020'>{n}</b></div>"
-        "</div>"
-        "<div>"
+    motiv_lbl = "Perché ACQUISTARE" if action=="BUY" else "Perché VENDERE" if action=="SELL" else "Motivi del segnale"
+    motiv_items = "".join('<li style="margin-bottom:6px;line-height:1.6">'+_tr(r2)+'</li>' for r2 in reasons)
+    motiv = (
+        '<div style="margin-top:14px">'
+        '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">'+motiv_lbl+'</div>'
+        '<ul style="margin:0;padding:0 0 0 18px;color:#D1D5DB;font-size:12px">'+motiv_items+'</ul>'
+        '</div>'
+    ) if motiv_items else ""
+
+    ai_html = (
+        '<div style="margin-top:12px;padding:10px 14px;background:#0A0F1A;border-left:3px solid #2563EB;border-radius:0 4px 4px 0">'
+        '<div style="font-size:9px;color:#2563EB;letter-spacing:.1em;margin-bottom:4px">ANALISI AI</div>'
+        '<div style="font-size:11px;color:#9CA3AF;line-height:1.7">'+ai_sum+'</div>'
+        '</div>'
+    ) if ai_sum else ""
+
+    news_items = "".join(
+        '<div style="padding:5px 0;border-bottom:1px solid #1F293722;font-size:11px;color:#9CA3AF">'
+        '▸ '+n.get("headline","")+'<span style="color:#374151"> — '+n.get("source","")+'</span></div>'
+        for n in news[:3]
+    )
+    news_html = (
+        '<div style="margin-top:12px">'
+        '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;margin-bottom:6px">ULTIME NOTIZIE</div>'
+        + news_items + '</div>'
+    ) if news_items else ""
+
+    price_html = (
+        '<div style="font-size:18px;font-weight:700;color:#F9FAFB;font-family:monospace">'+curr+" "+str(price)+'</div>'
+    ) if price else ""
+
+    # ── Fair Value + Health Score HTML ─────────────────────────────────────────
+    fv_html = ""
+    if fv.get("fair_value") or hs.get("score_1_5"):
+        upside   = fv.get("upside_pct")
+        up_col   = "#16A34A" if (upside or 0)>10 else "#F59E0B" if (upside or 0)>-10 else "#DC2626"
+        val_it   = {
+            "molto_sottovalutato": "Molto sottovalutato", "sottovalutato": "Sottovalutato",
+            "fair_value": "A Fair Value",  "sopravvalutato": "Sopravvalutato",
+            "molto_sopravvalutato": "Molto sopravvalutato",
+        }.get(fv.get("valuation",""), fv.get("valuation","") or "")
+        hs_score  = hs.get("score_1_5"); hs_label = hs.get("label","")
+        hs_col    = "#16A34A" if (hs_score or 0)>=4 else "#F59E0B" if (hs_score or 0)>=2.5 else "#DC2626"
+        nomi_d    = {"debt":"Debito","fcf":"FCF","rev_growth":"Ricavi","margin":"Margine","liquidity":"Liquidita"}
+        hs_items  = " &middot; ".join(
+            f'<b style="color:#F9FAFB">{nomi_d.get(k,k)}: {v}</b>'
+            for k,v in (hs.get("detail") or {}).items()
+        )
+        fv_html = '<div style="display:flex;gap:12px;margin-top:14px">'
+        if fv.get("fair_value"):
+            up_str = "+" if (upside or 0) >= 0 else ""
+            fv_html += (
+                '<div style="flex:1;background:#0A0F1A;border:1px solid #1F2937;border-radius:6px;padding:12px">'
+                '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;margin-bottom:5px">FAIR VALUE STIMATO</div>'
+                f'<div style="font-size:18px;font-weight:700;color:#F9FAFB;font-family:monospace">{curr} {fv["fair_value"]}</div>'
+                + (f'<div style="font-size:12px;font-weight:700;color:{up_col}">{up_str}{upside}% vs prezzo</div>' if upside is not None else "")
+                + f'<div style="font-size:10px;color:#6B7280">{val_it}</div>'
+                f'<div style="font-size:9px;color:#4B5563">Graham · P/E · FCF ({fv.get("models_used","?")} modelli)</div>'
+                '</div>'
+            )
+        if hs_score:
+            fv_html += (
+                '<div style="flex:1;background:#0A0F1A;border:1px solid #1F2937;border-radius:6px;padding:12px">'
+                '<div style="font-size:9px;color:#6B7280;letter-spacing:.1em;margin-bottom:5px">SALUTE FINANZIARIA</div>'
+                f'<div style="font-size:18px;font-weight:700;color:{hs_col}">{hs_score}/5 — {hs_label}</div>'
+                + (f'<div style="font-size:10px;color:#6B7280;margin-top:6px">{hs_items}</div>' if hs_items else "")
+                + '</div>'
+            )
+        fv_html += '</div>'
+
+    # ── Probabilità rimbalzo ─────────────────────────────────────────────────
+    bounce_html = ""
+    if action in ("BUY", "WATCHLIST"):
+        ind2   = r.get("indicators") or {}
+        rsi2   = ind2.get("rsi") or 50
+        bb2    = ind2.get("bb_pos") or 50
+        up2    = fv.get("upside_pct") or 0
+        bp     = 30
+        if rsi2 < 30:   bp += 20
+        elif rsi2 < 40: bp += 10
+        elif rsi2 < 50: bp += 5
+        if bb2 < 20:    bp += 15
+        elif bb2 < 30:  bp += 8
+        if conf > 60:   bp += 15
+        elif conf > 40: bp += 8
+        if up2 > 20:    bp += 10
+        elif up2 > 5:   bp += 5
+        bp    = min(85, max(25, bp))
+        bc    = "#16A34A" if bp > 65 else "#F59E0B" if bp > 45 else "#9CA3AF"
+        bounce_html = (
+            '<div style="margin-top:10px;padding:9px 12px;background:#0A0F1A;'
+            'border:1px solid #1F2937;border-radius:6px">'
+            '<span style="font-size:9px;color:#6B7280;letter-spacing:.1em">PROBABILITA RIMBALZO: </span>'
+            f'<span style="font-size:14px;font-weight:700;color:{bc};font-family:monospace">{bp}%</span>'
+            f'<div style="height:3px;background:#1F2937;border-radius:2px;margin-top:5px">'
+            f'<div style="height:3px;width:{bp}%;background:{bc};border-radius:2px"></div></div>'
+            '</div>'
+        )
+
+    # ── Sub-scores pill ───────────────────────────────────────────────────────
+    sub_html = ""
+    if sub_s:
+        nomi_s = {"technical":"Tech","macro":"Macro","regime":"Regime",
+                  "sector":"Settore","institutional":"Istituz.","fundamental":"Fund."}
+        pills  = []
+        for k, v in sub_s.items():
+            if v:
+                sc  = "#16A34A" if v > 0 else "#DC2626"
+                sgn = "+" if v > 0 else ""
+                pills.append(
+                    f'<span style="background:{sc}18;color:{sc};border:1px solid {sc}44;'
+                    f'padding:2px 7px;border-radius:8px;font-size:9px;font-family:monospace">'
+                    f'{nomi_s.get(k, k)}:{sgn}{v}</span>'
+                )
+        if pills:
+            sub_html = '<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">' + " ".join(pills) + '</div>'
+
+    parts = [
+        '<div style="background:#111827;border:1px solid #1F2937;border-left:4px solid '+col+';border-radius:10px;margin-bottom:20px;overflow:hidden">',
+        '<div style="padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-start;background:'+col+'0D;border-bottom:1px solid #1F2937">',
+        '<div>',
+        '<div style="font-size:20px;font-weight:800;color:'+col+'">'+etiq+'</div>',
+        '<div style="font-size:17px;font-weight:700;color:#F9FAFB;margin-top:4px">'+sym+'<span style="font-size:12px;font-weight:400;color:#9CA3AF;margin-left:8px">'+full_name+'</span></div>',
+        '<div style="font-size:10px;color:#6B7280;margin-top:3px">'+mkt_label+' · '+atype+isin_str+exch_str+'</div>',
+        '</div>',
+        '<div style="text-align:right;flex-shrink:0;margin-left:16px">',
+        price_html,
+        '<div style="font-size:11px;color:#6B7280;margin-top:3px">Score: <span style="color:'+col+';font-weight:700">'+sc_str+'/100</span></div>',
+        '</div></div>',
+        '<div style="padding:8px 18px;background:#0D1420;border-bottom:1px solid #1F2937">',
+        '<div style="display:flex;justify-content:space-between;margin-bottom:3px">',
+        '<span style="font-size:10px;color:#6B7280;letter-spacing:.08em">CONFIDENZA SEGNALE</span>',
+        '<span style="font-size:10px;font-weight:700;color:'+conf_col+'">'+str(conf)+'% — '+conf_lbl+'</span></div>',
+        '<div style="height:5px;background:#1F2937;border-radius:3px">',
+        '<div style="height:5px;width:'+str(conf)+'%;background:'+conf_col+';border-radius:3px"></div>',
+        '</div></div>',
+        '<div style="padding:14px 18px">',
+        livelli,
+        motiv,
+        _score_breakdown_html(bd),
+        _perf_section(ind, curr),
+        _ind_section(ind),
+        sub_html,
+        fv_html,
+        bounce_html,
+        ai_html,
+        news_html,
+        '</div></div>',
+    ]
+    return "".join(parts)
+
+def _card_hold(r: dict) -> str:
+    sym    = r.get("symbol","?"); nm = r.get("full_name") or r.get("name",sym)
+    action = r.get("action","HOLD"); score = r.get("score",0)
+    price  = r.get("price"); curr = r.get("currency",""); ind = r.get("indicators",{})
+    rsi    = f"RSI {ind['rsi']}" if ind.get("rsi") else ""; adx = f"ADX {ind['adx']}" if ind.get("adx") else ""
+    reasons = [_tr(x) for x in r.get("reasons",[])[:2]]
+    reason_str = " · ".join(reasons) if reasons else ""
+    sc_str = ("+" if score>=0 else "")+str(score)
+    etiq   = {"HOLD":"⚪ Neutro","NO_DATA":"⚫ Nessun dato"}.get(action, action)
+    price_str = f"{curr} {price}" if price else "—"
+    return (
+        f'<tr style="border-bottom:1px solid #1F2937">'
+        f'<td style="padding:7px 10px;color:#F9FAFB;font-weight:600;white-space:nowrap">{sym}</td>'
+        f'<td style="padding:7px 10px;color:#9CA3AF;font-size:11px">{nm[:28]}</td>'
+        f'<td style="padding:7px 10px;color:#6B7280;font-size:11px">{etiq}</td>'
+        f'<td style="padding:7px 10px;font-family:monospace;font-size:11px;color:{"#16A34A" if score>=0 else "#DC2626"}">{sc_str}</td>'
+        f'<td style="padding:7px 10px;color:#9CA3AF;font-size:11px">{" | ".join(filter(None,[rsi,adx]))}</td>'
+        f'<td style="padding:7px 10px;color:#6B7280;font-size:11px;font-family:monospace">{price_str}</td>'
+        f'<td style="padding:7px 10px;color:#6B7280;font-size:10px;max-width:200px">{reason_str}</td>'
+        f'</tr>'
     )
 
-    end_html = (
-        "</div>"
-        "</div>"
+
+# ── Build HTML report ─────────────────────────────────────────────────────────
+def build_html_report(results: List[Dict], run_ts: str, next_ts: str, smart_money_data: Dict = None) -> str:
+    run_dt  = run_ts[:19].replace("T"," ") if run_ts else "---"
+    next_dt = next_ts[:19].replace("T"," ") if next_ts else "---"
+
+    buy_l   = [r for r in results if r.get("action")=="BUY"]
+    sell_l  = [r for r in results if r.get("action")=="SELL"]
+    watch_l = [r for r in results if r.get("action")=="WATCHLIST"]
+    hold_l  = [r for r in results if r.get("action") not in ("BUY","SELL","WATCHLIST")]
+
+    # Riepilogo
+    parts_rie = []
+    if buy_l:   parts_rie.append(f'<span style="color:#16A34A;font-weight:700">🟢 {len(buy_l)} Acquist{"o" if len(buy_l)==1 else "i"}</span>')
+    if sell_l:  parts_rie.append(f'<span style="color:#DC2626;font-weight:700">🔴 {len(sell_l)} Vendit{"a" if len(sell_l)==1 else "e"}</span>')
+    if watch_l: parts_rie.append(f'<span style="color:#2563EB;font-weight:700">🔵 {len(watch_l)} Da osservare</span>')
+    if hold_l:  parts_rie.append(f'<span style="color:#6B7280">⚪ {len(hold_l)} Neutri</span>')
+    riepilogo = " &nbsp;·&nbsp; ".join(parts_rie) or "Nessun segnale attivo"
+
+    def _section(lst, col, icon, label):
+        if not lst: return ""
+        cards = "".join(_card(r) for r in lst)
+        return (
+            f'<div style="margin-bottom:28px">'
+            f'<div style="font-size:13px;font-weight:700;color:{col};padding:8px 14px;'
+            f'background:{col}18;border-left:4px solid {col};border-radius:0 6px 6px 0;margin-bottom:14px">'
+            f'{icon} {label} ({len(lst)})</div>'
+            f'{cards}</div>'
+        )
+
+    hold_rows = "".join(_card_hold(r) for r in hold_l)
+    hold_section = (
+        f'<div style="margin-bottom:20px">'
+        f'<div style="font-size:12px;font-weight:600;color:#6B7280;margin-bottom:8px">⚪ ALTRI ASSET MONITORATI ({len(hold_l)})</div>'
+        f'<div style="overflow-x:auto">'
+        f'<table style="width:100%;min-width:600px;border-collapse:collapse;background:#111827;'
+        f'border:1px solid #1F2937;border-radius:8px;overflow:hidden">'
+        f'<tr style="background:#0D1420">'
+        + "".join(f'<th style="padding:6px 10px;color:#6B7280;font-size:9px;text-align:left;letter-spacing:.1em;font-weight:600">{h}</th>'
+                  for h in ["SIMBOLO","NOME","STATO","SCORE","RSI / ADX","PREZZO","MOTIVO"])
+        + f'</tr>{hold_rows}</table></div></div>'
+    ) if hold_l else ""
+
+    # Smart money section
+    sm_section = ""
+    if smart_money_data and _HAS_SM:
+        sm_section = _sm_section(smart_money_data) or ""
+
+    return (
+        '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"/></head>'
+        '<body style="margin:0;padding:0;background:#0D1117;font-family:\'Segoe UI\',system-ui,sans-serif">'
+        '<div style="max-width:720px;margin:0 auto;padding:20px 14px">'
+
+        # Header
+        '<div style="background:linear-gradient(135deg,#111827,#1F2937);border:1px solid #374151;'
+        'border-radius:12px;padding:24px;margin-bottom:20px;text-align:center">'
+        '<div style="font-size:26px;font-weight:800;color:#F9FAFB">⊕ Market Analyze</div>'
+        '<div style="font-size:12px;color:#6B7280;margin-top:6px">REPORT SEGNALI · DATI REALI · AI VALIDATION</div>'
+        '<div style="margin-top:12px;font-size:11px;color:#9CA3AF">'
+        f'📅 {run_dt} &nbsp;·&nbsp; ⏭ Prossimo: {next_dt} &nbsp;·&nbsp; 📊 {len(results)} asset analizzati</div></div>'
+
+        # Riepilogo
+        '<div style="background:#111827;border:1px solid #1F2937;border-radius:10px;'
+        'padding:14px 20px;margin-bottom:22px;text-align:center">'
+        '<div style="font-size:10px;color:#6B7280;letter-spacing:.1em;margin-bottom:8px">RIEPILOGO</div>'
+        f'<div style="font-size:14px;line-height:2">{riepilogo}</div></div>'
+
+        + _section(buy_l,   "#16A34A", "🟢", "SEGNALI DI ACQUISTO")
+        + _section(sell_l,  "#DC2626", "🔴", "SEGNALI DI VENDITA")
+        + _section(watch_l, "#2563EB", "🔵", "DA OSSERVARE")
+        + hold_section
+        + sm_section
+
+        + '<div style="text-align:center;padding:16px;font-size:10px;color:#374151;'
+        'margin-top:8px;border-top:1px solid #1F2937">'
+        'Market Analyze · Home Assistant Add-on · Non costituisce consulenza finanziaria</div>'
+        '</div></body></html>'
     )
 
-    return "<!DOCTYPE html><html lang='it'><head><meta charset='UTF-8'/></head><body style='margin:0;padding:0;background:#07090D;color:#D0DFF8;font-family:Segoe UI,system-ui,sans-serif'>" + subject_style + "".join(card_rows) + end_html + "</body></html>"
 
+# ── Entry point ────────────────────────────────────────────────────────────────
+def send_report(results: List[Dict], run_ts: str, next_ts: str, cfg: Dict, smart_money_data: Dict = None) -> bool:
+    if not cfg.get("email_enabled"): return False
+    email_to   = cfg.get("email_to","");   email_from = cfg.get("email_from","")
+    if not email_to or not email_from:
+        log.warning("[MAILER] email_to o email_from mancanti"); return False
 
-def send_report(results: List[Dict[str, Any]], run_ts: str, next_ts: str, cfg: Dict[str, Any]) -> bool:
-    if not cfg.get("email_enabled"):
-        return False
+    min_score = int(cfg.get("email_min_score",40))
+    active    = [r for r in results if r.get("action") in ("BUY","SELL","WATCHLIST")]
+    strong    = [r for r in active if abs(r.get("score",0)) >= min_score]
+    if not strong:
+        log.info(f"[MAILER] Nessun segnale con |score| >= {min_score}"); return False
 
-    required = ["email_to", "email_from", "smtp_host", "smtp_user", "smtp_password"]
-    missing = [k for k in required if not cfg.get(k)]
-    if missing:
-        log.warning("Email skip - mancanti: %s", missing)
-        return False
+    html_body = build_html_report(results, run_ts, next_ts, smart_money_data)
 
-    min_score = int(cfg.get("email_min_score", 40))
-    html_body = build_html(results, run_ts, next_ts, min_score)
-
-    n_strong = len([r for r in results if r.get("action") in ("BUY", "SELL") and abs(float(r.get("score", 0))) >= min_score])
-    subject = "Multi-Market Intelligence - strong signals (%d) - %s" % (n_strong, (run_ts[:10] if run_ts else ""))
+    n_buy  = sum(1 for r in active if r.get("action")=="BUY")
+    n_sell = sum(1 for r in active if r.get("action")=="SELL")
+    parts_s = []
+    if n_buy:  parts_s.append(f"{n_buy} ACQUIST{'O' if n_buy==1 else 'I'}")
+    if n_sell: parts_s.append(f"{n_sell} VENDIT{'A' if n_sell==1 else 'E'}")
+    subject = f"📊 Market Analyze — {', '.join(parts_s) or 'Nessun segnale'} — {run_ts[:10] if run_ts else ''}"
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = cfg["email_from"]
-    msg["To"] = cfg["email_to"]
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
+    msg["Subject"] = subject; msg["From"] = email_from; msg["To"] = email_to
+    msg.attach(MIMEText(html_body,"html","utf-8"))
 
-    host = cfg.get("smtp_host", "smtp.gmail.com")
-    port = int(cfg.get("smtp_port", 587))
-    tls = bool(cfg.get("smtp_tls", True))
-    user = cfg["smtp_user"]
-    pw = cfg["smtp_password"]
+    # OAuth2
+    cid = cfg.get("oauth2_client_id",""); csec = cfg.get("oauth2_client_secret",""); rtok = cfg.get("oauth2_refresh_token","")
+    if cid and csec and rtok:
+        log.info("[MAILER] Invio OAuth2...")
+        if _send_oauth2(msg, email_from, email_to, cid, csec, rtok): return True
+        log.warning("[MAILER] OAuth2 fallito, provo App Password")
 
-    try:
-        log.info("Invio email a %s via %s:%s", cfg["email_to"], host, port)
-        if tls:
-            srv = smtplib.SMTP(host, port, timeout=15)
-            srv.ehlo()
-            srv.starttls()
-        else:
-            srv = smtplib.SMTP_SSL(host, port, timeout=15)
-        srv.login(user, pw)
-        srv.sendmail(cfg["email_from"], cfg["email_to"], msg.as_string())
-        srv.quit()
-        log.info("Email inviata OK")
-        return True
-    except smtplib.SMTPAuthenticationError:
-        log.error("Auth SMTP fallita - verifica user/password")
-        return False
-    except Exception as e:
-        log.error("Errore email: %s", e)
-        return False
+    # App Password fallback
+    user = cfg.get("smtp_user",""); pw = cfg.get("smtp_password","")
+    if user and pw:
+        log.info("[MAILER] Invio App Password...")
+        return _send_apppassword(msg, email_from, email_to,
+                                 cfg.get("smtp_host","smtp.gmail.com"),
+                                 int(cfg.get("smtp_port",587)),
+                                 user, pw, bool(cfg.get("smtp_tls",True)))
 
+    log.error("[MAILER] Nessuna credenziale configurata"); return False

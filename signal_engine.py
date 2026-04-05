@@ -6,8 +6,8 @@ from typing   import Dict, List, Optional
 
 log = logging.getLogger("signal_engine")
 
-TRADING_START = dtime(7, 30)
-TRADING_END   = dtime(23, 0)
+TRADING_START = dtime(8, 0)   # Inizio analisi e invio segnali
+TRADING_END   = dtime(23, 30) # Fine analisi e invio segnali
 ACTIONS       = ("BUY", "SELL", "WATCHLIST", "HOLD", "NO_DATA")
 
 
@@ -34,6 +34,9 @@ def build_quant_signal(ind: Optional[Dict], asset: Dict) -> Dict:
     base = {
         "symbol":        sym,
         "name":          asset.get("name", sym),
+        "full_name":     asset.get("full_name", asset.get("name", sym)),
+        "isin":          asset.get("isin", ""),
+        "exchange":      asset.get("exchange", ""),
         "market":        asset.get("market", "?"),
         "asset_type":    asset.get("asset_type", "?"),
         "currency":      asset.get("currency", "?"),
@@ -189,18 +192,81 @@ def build_quant_signal(ind: Optional[Dict], asset: Dict) -> Dict:
     else:
         breakdown["roc"] = 0
 
+    # 9. RSI Divergenza bullish (max 6pts)
+    # Divergenza: prezzo fa nuovi minimi ma RSI recupera → potente segnale reversal
+    rsi_divergence = False
+    if rsi is not None and 25 <= rsi <= 45:
+        # Proxy: RSI in zona oversold + ROC negativo ma RSI in risalita vs BB oversold
+        if rsi < 35 and bb_pos is not None and bb_pos < 25:
+            bull_score += 5; breakdown["rsi_div"] = +5
+            reasons_b.append(f"Potenziale divergenza bullish RSI={rsi:.0f} + BB oversold ({bb_pos:.0f}%)")
+            rsi_divergence = True
+        elif rsi < 42 and bb_pos is not None and bb_pos < 30 and stoch_k is not None and stoch_k < 25:
+            bull_score += 3; breakdown["rsi_div"] = +3
+            reasons_b.append(f"Setup oversold multiplo RSI={rsi:.0f} Stoch={stoch_k:.0f}")
+    else:
+        breakdown["rsi_div"] = 0
+
+    # RSI divergenza bearish (short signal)
+    if rsi is not None and 60 <= rsi <= 80 and bb_pos is not None and bb_pos > 75:
+        bear_score += 4; breakdown["rsi_div_bear"] = -4
+        reasons_s.append(f"Potenziale divergenza bearish RSI={rsi:.0f} + BB overbought")
+
+    # 10. Bollinger Band Compression → imminente espansione (max 4pts)
+    # BB bandwidth < 3% → squeeze → breakout probabile
+    # Usa bull_score >= bear_score come proxy per la direzione (net non ancora calcolato)
+    _bb_dir = (bull_score >= bear_score)  # True = bullish bias
+    if bb_bw is not None:
+        if bb_bw < 2.5:
+            if _bb_dir:
+                bull_score += 4; breakdown["bb_squeeze"] = +4
+                reasons_b.append(f"BB squeeze ({bb_bw:.1f}%) → breakout rialzista probabile")
+            else:
+                bear_score += 4; breakdown["bb_squeeze"] = -4
+                reasons_s.append(f"BB squeeze ({bb_bw:.1f}%) → breakout ribassista probabile")
+        elif bb_bw < 4.0:
+            breakdown["bb_squeeze"] = +2 if _bb_dir else -2
+        else:
+            breakdown["bb_squeeze"] = 0
+    else:
+        breakdown["bb_squeeze"] = 0
+
+    # 11. MACD divergenza — crossover recente con conferma volume (max 5pts)
+    macd_cross_val = _safe(macd_d, "crossing", default="none")
+    if macd_cross_val == "bullish_cross" and vol_sig in ("NORMAL", "HIGH"):
+        bull_score += 5; breakdown["macd_conf"] = +5
+        reasons_b.append("MACD bullish cross con volume confermato")
+    elif macd_cross_val == "bearish_cross" and vol_sig in ("NORMAL", "HIGH"):
+        bear_score += 5; breakdown["macd_conf"] = -5
+        reasons_s.append("MACD bearish cross con volume confermato")
+    else:
+        breakdown["macd_conf"] = 0
+
+    # 12. Anti value-trap filter: evita BUY su trend ribassista violento
+    # Se prezzo -20%+ in 60gg E MA200 declinante → penalità su segnali BUY
+    perf60 = _safe(ind, "performance", "60d") if ind else None
+    if perf60 is not None and perf60 < -20 and cross in ("ma20_below_ma50", "death_cross"):
+        # Possibile value trap: rendimento crollo + trend ribassista
+        bull_score = max(0, bull_score - 8)
+        breakdown["anti_trap"] = -8
+        reasons_s.append(f"⚠ Possibile value trap: calo {perf60:.0f}% in 60gg + trend ribassista")
+    else:
+        breakdown["anti_trap"] = 0
+
     # ── Net score → action ────────────────────────────────────────────────────
     net     = bull_score - bear_score
     max_pos = bull_score + bear_score if (bull_score + bear_score) > 0 else 1
     conf    = round(abs(net) / max_pos * 100)
     conf    = max(0, min(99, conf))
 
-    if net >= 25 and conf >= 55:
+    if net >= 30 and conf >= 55:
         action = "BUY"
-    elif net <= -25 and conf >= 55:
+    elif net <= -30 and conf >= 55:
         action = "SELL"
-    elif abs(net) >= 12 and conf >= 40:
-        action = "WATCHLIST"
+    elif abs(net) >= 18 and conf >= 35:
+        action = "WATCHLIST"   # ampia finestra: segnali da monitorare
+    elif abs(net) >= 10 and conf >= 45:
+        action = "WATCHLIST"   # segnali più concentrati ma meno forti
     else:
         action = "HOLD"
 
